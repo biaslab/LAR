@@ -5,7 +5,6 @@ using ForneyLab
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 # order of AR model
 ARorder = 10
-c = uvector(ARorder)
 
 # Data processing
 ARparse(x) = try
@@ -105,7 +104,7 @@ a_w_min = a_w_0
 b_w_min = b_w_0
 
 marginals = Dict()
-n_its = 20
+n_its = 2
 datasetRatio = 3
 
 for t = 1:div(length(y), datasetRatio)
