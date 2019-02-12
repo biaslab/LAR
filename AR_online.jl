@@ -1,35 +1,14 @@
-using CSV, DataFrames
-using Revise
 using ForneyLab
-
+import Main.ARdata: daily_temperature, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean
 # order of AR model
-ARorder = 10
-
-# Data processing
-ARparse(x) = try
-    parse(Float64, x)
-    return true
-catch
-    return false
-end
-
+ARorder = UInt16(4)
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
-
-df = CSV.File("/Users/albertpod/Documents/Julia/Variational Bayes//daily-minimum-temperatures.csv") |> DataFrame
-names!(df, [:Date, :Temp])
-filter!(row -> ARparse(row[:Temp]) == true, df)
-
-# Data
-x = []
-for i in range(1, size(df, 1) - ARorder)
-    xi = map(x->parse(Float64,x), df[i:ARorder+i - 1, :Temp])
-    push!(x, xi)
-end
-
+#x = daily_temperature("/Users/albertpod/Documents/Julia/Variational Bayes//daily-minimum-temperatures.csv", UInt16(2))
+coefs, x = generate_data(UInt64(1000), ARorder)
 # Observations
-y = [xi[end] for xi in x]
+y = [xi[end] for xi in x[2:end]] .+ rand()*0.000001
 #y = x
 
 # Building the model
@@ -51,7 +30,7 @@ g = FactorGraph()
 #@RV x_t
 @RV w ~ Gamma(a_w_t, b_w_t)
 @RV x_t = AR(a, x_t_prev, w)
-@RV n ~ GaussianMeanPrecision(0.0, 10.0)
+@RV n ~ GaussianMeanPrecision(0.0, 0.000001)
 #@RV y_t = zeros(ARorder) + x_t
 c = zeros(ARorder); c[1] = 1.0
 @RV y_t = dot(c, x_t) + n
@@ -84,7 +63,7 @@ algo = variationalAlgorithm(q)
 
 # Load algorithms
 eval(Meta.parse(algo))
-display(Meta.parse(algo))
+#display(Meta.parse(algo))
 
 # Define values for prior statistics
 m_x_prev_0 = 0.5*rand(ARorder)
@@ -115,10 +94,10 @@ m_a_t_min = m_a_0
 w_a_t_min = w_a_0
 
 marginals = Dict()
-n_its = 1
+n_its = 10
 datasetRatio = 30
 
-for t = 1:10
+for t = 1:200
     println("Observation # ", t)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
