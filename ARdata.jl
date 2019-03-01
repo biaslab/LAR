@@ -44,16 +44,16 @@ function generate_coefficients(order::UInt16)
 end
 
 
-function generate_data(num::UInt64, order::UInt16; noise_variance=1.0)
+function generate_data(num::UInt64, order::UInt16; noise_variance=1e-15)
     coefs = generate_coefficients(order)
     inits = rand(order)
-    data = Vector{Vector{Float64}}(undef, num+3*order)
+    data = Vector{Vector{Float64}}(undef, num+100*order)
     data[1] = inits
-    for i in 2:num+3*order
-        data[i] = append!(data[i-1][2:end], [data[i-1]'coefs])
-        data[i][end] += noise_variance * rand()
+    for i in 2:num+100*order
+        data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
+        data[i][1] += noise_variance * rand()
     end
-    data = data[1+3*order:end]
+    data = data[1+100*order:end]
     return coefs, data
 end
 
