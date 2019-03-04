@@ -75,7 +75,7 @@ w_x_0 = (tiny*diagAR(ARorder))
 a_w_0 = 20
 b_w_0 = 10
 m_a_0 =  10.0*rand(ARorder)#[0.8068730972003983, 0.1686530319145092]
-w_a_0 = (1*diagAR(ARorder))#[6.9639e5   6.81754e5; 6.81754e5  7.03203e5]#(1*diagAR(ARorder))
+w_a_0 = (tiny*diagAR(ARorder))#[6.9639e5   6.81754e5; 6.81754e5  7.03203e5]#(1*diagAR(ARorder))
 
 X = Vector{Float64}(undef, length(x))
 
