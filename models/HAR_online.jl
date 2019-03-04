@@ -12,7 +12,7 @@ x = [reverse(x) for x in x]
 
 #y = [xi[1] for xi in x[2:end]] .+ rand()*1.0
 y = [x .+ 0.001 for x in x]
-push!(y, xi)
+#push!(y, xi)
 
 # Building the model
 g = FactorGraph()
@@ -72,7 +72,7 @@ m_x_prev_0 = 100.0*rand(ARorder)
 w_x_prev_0 = (tiny*diagAR(ARorder))
 m_x_0 = 100.0*rand(ARorder)
 w_x_0 = (tiny*diagAR(ARorder))
-a_w_0 = 0
+a_w_0 = 20
 b_w_0 = 10
 m_a_0 =  10.0*rand(ARorder)#[0.8068730972003983, 0.1686530319145092]
 w_a_0 = (1*diagAR(ARorder))#[6.9639e5   6.81754e5; 6.81754e5  7.03203e5]#(1*diagAR(ARorder))
