@@ -1,1 +1,4 @@
 .DS_Store
+.gif
+notebooks/.ipynb_checkpoints
+AR-node
