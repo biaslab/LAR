@@ -1,5 +1,4 @@
 using ForneyLab
-import ARdata: use_data, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 using Plots

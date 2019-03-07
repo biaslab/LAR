@@ -1,17 +1,20 @@
+using Revise
 using ForneyLab
 include("../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
-import ARdata: use_data, generate_data
+
+include("../data/ARdata.jl")
+import Main.ARdata: use_data, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 # order of AR model
-ARorder = UInt16(2)
+ARorder = 2
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
-coefs, x = generate_data(UInt64(1000), ARorder, 1, 0.1)
+coefs, x = generate_data(1000, ARorder, 1, noise_variance=0.1)
 #x = X
 # Observations
-#x = use_data("/Users/albertpod/Documents/Julia/VariationalBayes/data/daily-minimum-temperatures.csv", ARorder)
+#x = use_data("data/daily-minimum-temperatures.csv", ARorder)
 #x = [reverse(x) for x in x]
 
 measurement_noise = 1.0
@@ -43,7 +46,7 @@ g = FactorGraph()
 Autoregression(x_t, x_t_prev, a, w)
 #@RV n ~ GaussianMeanPrecision(0*rand(ARorder), 2*diagAR(ARorder))
 #@RV y_t = x_t + n
-@RV n ~ GaussianMeanVariance(0.0, 2.0)
+@RV n ~ GaussianMeanPrecision(0.0, 1.0)
 c = zeros(ARorder); c[1] = 1.0
 @RV y_t = dot(c, x_t) + n
 
@@ -61,7 +64,7 @@ placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
 placeholder(y_t, :y_t)
 #placeholder(y_t, :y_t, dims=(ARorder,))
 
-ForneyLab.draw(g)
+#ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, x_t_prev, x_t, w, ids=[:A, :X_t_prev, :X_t, :W])
@@ -82,8 +85,8 @@ w_x_prev_0 = (tiny*diagAR(ARorder))
 m_x_0 = 0.0*rand(ARorder)
 w_x_0 = (tiny*diagAR(ARorder))
 a_w_0 = 1
-b_w_0 = huge
-m_a_0 =  10.0*rand(ARorder)#mean(marginals[:a])#0.0*rand(ARorder)#[0.8068730972003983, 0.1686530319145092]
+b_w_0 = 10
+m_a_0 =  1.0*rand(ARorder)#mean(marginals[:a])#0.0*rand(ARorder)#[0.8068730972003983, 0.1686530319145092]
 w_a_0 =  (tiny*diagAR(ARorder))#[6.9639e5   6.81754e5; 6.81754e5  7.03203e5]#(1*diagAR(ARorder))
 
 X = Vector{Float64}(undef, length(x))
@@ -133,7 +136,7 @@ for t = 1:length(y)
                     :b_w_t => b_w_t_min)
         #display(data)
         stepA!(data, marginals)
-        #stepW!(data, marginals)
+        stepW!(data, marginals)
         stepX_t!(data, marginals)
         stepX_t_prev!(data, marginals)
         # Extract posterior statistics
@@ -165,25 +168,25 @@ for t = 1:length(y)
     #display(marginals)
 end
 
-from = length(x) - 700
-using Plots
+#from = length(x) - 700
+#using Plots
 #predicted = [ForneyLab.sample(marginals[:a])'ForneyLab.sample(marginals[:x_t_prev]) + rand()*var(marginals[:w]) for x in x[from:end]]
 #predicted = [coefs'x + rand() for x in x[from-1:end-1]]
 #predicted = [x[1] for x in X[from:end]]
-predicted = [x[1] for x in m_x[1:end-1]]
+predicted = [x[1] for (t, x) in enumerate(m_x[1:end-1])]
 noise = [y[1] for y in y[1:end]]
 actual = [x[1] for x in x[2:end]]
 mse = (sum((predicted - actual).^2))/length(predicted)
 #plot([actual, noise])
 
 v_x = [v_x[1]^-1 for v_x in w_x[1:end-1]] # variance\n",
-upto = 100#length(x)
+upto = 90#length(x)
 scale = 1
 plot([predicted[1:upto], predicted[1:upto]], fillrange=[predicted[1:upto]- scale .* sqrt.(v_x[1:upto]),predicted[1:upto]+ scale .* sqrt.(v_x[1:upto])],
      fillalpha = 0.2,
      fillcolor = :red,
      label=["inferred", "inferred"])
-plot!(noise[1:upto], label="noised")
+#plot!(noise[1:upto], label="noised")
 plot!(actual[1:upto], label="real state")
 #ylims(-1, 1)
 x = m_x

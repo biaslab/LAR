@@ -1,6 +1,7 @@
 module ARdata
-
-using CSV, DataFrames, PolynomialRoots
+import PolynomialRoots.roots
+import CSV: File
+import DataFrames: DataFrame, names!
 
 # Filter bad data
 FloatParse(x) = try
@@ -10,24 +11,20 @@ catch
     return false
 end
 
-function use_data(filepath::String, order::UInt16)
-
-    df = CSV.File(filepath) |> DataFrame
+function use_data(filepath::String, order::Int)
+    df = File(filepath) |> DataFrame
     x = []
-
     names!(df, [:timestamp, :value])
-
     filter!(row -> FloatParse(row[:value]) == true, df)
-
     # Data
-    for i in range(1, size(df, 1) - order)
+    for i in range(1, stop=size(df, 1) - order)
         xi = map(x->parse(Float64,x), df[i:order+i - 1, :value])
         push!(x, xi)
     end
     return x
 end
 
-function generate_coefficients(order::UInt16)
+function generate_coefficients(order::Int)
     stable = false
     true_a = []
     # Keep generating coefficients until we come across a set of coefficients
@@ -44,10 +41,8 @@ function generate_coefficients(order::UInt16)
 end
 
 
-function generate_data(num::UInt64, order::UInt16, scale, noise_variance=1)
+function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     coefs = generate_coefficients(order)
-    #coefs = [-0.10958935, -0.34564819,  0.3682048,   0.3134046,  -0.21553732,  0.34613629, 0.41916508,  0.0165352,   0.14163503, -0.38844378]
-    #coefs = [-2*cos(2*pi), 1]
     inits = scale*rand(order)
     data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
