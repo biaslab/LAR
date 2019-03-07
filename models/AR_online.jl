@@ -1,5 +1,5 @@
 using ForneyLab
-import ARdata: daily_temperature, generate_data
+import ARdata: use_data, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 using Plots
@@ -11,19 +11,20 @@ function plotter(ma, x, mw, testPoints=100, plt=true)
     actual = [x[1] for x in x[from:end]]
     mse = (sum((predicted - actual).^2))/length(predicted)
     if plt
-        ylims!(-10, 30)
+        ylims!(-1, 2)
         plot!([actual, predicted], title = "unforeseen data", xlabel="days", ylabel="temperature", label=["actual", "predicted"])
     end
     return mse
 end
 
 # order of AR model
-ARorder = UInt16(10)
+ARorder = UInt16(2)
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 # Observations
-x = daily_temperature("/Users/albertpod/Documents/Julia/VariationalBayes/data/daily-minimum-temperatures.csv", ARorder)
-x = [reverse(x) for x in x]
+#x = use_data("/Users/albertpod/Documents/Julia/VariationalBayes/data/daily-minimum-temperatures.csv", ARorder)
+#x = [reverse(x) for x in x]
+coefs, x = generate_data(UInt64(1000), ARorder, 1, 0.1)
 #append!(x, x); append!(x, x)
 #y = x
 #plot([x[1] for x in x])
@@ -90,7 +91,7 @@ w_x_0 = (huge*diagAR(ARorder))
 a_w_0 = 20
 b_w_0 = 2
 m_a_0 = 5.0*rand(ARorder)
-w_a_0 = (0.25*diagAR(ARorder))
+w_a_0 = (tiny*diagAR(ARorder))
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(x))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(x))
@@ -115,8 +116,8 @@ n_its = 10
 testPoints = 100
 
 MSEs = []
-anim = @animate for t = 2:length(x)-testPoints
-    s = plot()
+for t = 2:length(x)-testPoints
+    #s = plot()
     println("Observation # ", t)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
@@ -154,17 +155,20 @@ anim = @animate for t = 2:length(x)-testPoints
         a_w_t_min = a_w[t]
         b_w_t_min = b_w[t]
     end
-    mse = analyse(marginals[:a], x, marginals[:w], testPoints, true)
-    display(mse)
-    push!(MSEs, mse)
+    #mse = plotter(marginals[:a], x, marginals[:w], testPoints, true)
+    #display(mse)
+    #push!(MSEs, mse)
 end
 
-gif(anim, "gifs/AR-online.gif", fps = 10)
+gif(anim, "gifs/AR-synthetic.gif", fps = 100)
 
+
+from = 900
 init = ProbabilityDistribution(Multivariate, GaussianMeanPrecision,
                                m=10.0*rand(ARorder),
                                w=(tiny*diagAR(ARorder)))
-init_predicted = [ForneyLab.sample(init)'x + (20/2)^-1 for x in x[from-1:end-1]]
-mse_init = (sum((init_predicted - actual).^2))/length(init_predicted)
+predicted = [mean(marginals[:a])'x for x in x[from-1:end-1]]
+actual = [x[1] for x in x][from:end]
+mse_init = (sum((predicted - actual).^2))/length(predicted)
 
 plot([actual, predicted], xlabel="timestamp", ylabel = "x", label=["actual", "predicted"])

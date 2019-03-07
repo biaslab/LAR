@@ -47,14 +47,15 @@ end
 function generate_data(num::UInt64, order::UInt16, scale, noise_variance=1)
     coefs = generate_coefficients(order)
     #coefs = [-0.10958935, -0.34564819,  0.3682048,   0.3134046,  -0.21553732,  0.34613629, 0.41916508,  0.0165352,   0.14163503, -0.38844378]
+    #coefs = [-2*cos(2*pi), 1]
     inits = scale*rand(order)
-    data = Vector{Vector{Float64}}(undef, num+100*order)
+    data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
-    for i in 2:num+100*order
+    for i in 2:num+3*order
         data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
-        data[i][1] += noise_variance * rand()
+        data[i][1] += sqrt(noise_variance)*randn()#noise_variance * rand()
     end
-    data = data[1+100*order:end]
+    data = data[1+3*order:end]
     return coefs, data
 end
 
