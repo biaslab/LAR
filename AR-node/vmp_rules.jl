@@ -68,7 +68,7 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
     order == Nothing ? defineOrder(length(my)) : order
     D = unsafeCov(marg_x)+unsafeMean(marg_x)*unsafeMean(marg_x)'
     m = (D^-1)*unsafeMean(marg_x)*c'*my
-    W = Symmetric(unsafeMean(marg_w)*D)*diagAR(order)*0.01
+    W = Symmetric(unsafeMean(marg_w)*D)
     Message(Multivariate, GaussianMeanPrecision, m=m, w=W)
 end
 

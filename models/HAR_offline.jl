@@ -1,3 +1,5 @@
+# FIXME: Offline model doesn't work at the moment
+
 import ARdata: generate_data, generate_coefficients
 using Plots
 import LinearAlgebra.I, LinearAlgebra.Symmetric

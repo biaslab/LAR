@@ -1,31 +1,33 @@
+using ProgressMeter
 using Revise
 using ForneyLab
 include("../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
 
+include("../helpers.jl")
+
 include("../data/ARdata.jl")
 import Main.ARdata: use_data, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
+
 # order of AR model
-ARorder = 2
+ARorder = 10
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
-coefs, x = generate_data(1000, ARorder, 1, noise_variance=0.1)
-#x = X
-# Observations
+
+# synthesize AR data
+coefs, x = generate_data(10000, ARorder, 1.0, noise_variance=0.1)
+
+# daily temperature
 #x = use_data("data/daily-minimum-temperatures.csv", ARorder)
 #x = [reverse(x) for x in x]
 
+# Observations
 measurement_noise = 1.0
 y = [xi[1] + sqrt(measurement_noise)*randn() for xi in x[2:end]]
-#y = [x .+ rand() for x in x]
-#push!(y, xi)
-using Plots
-#plot([yi[1] for yi in y[1:100]])
-plot(y[1:100])
-x_data = [xi[1] for xi in x[2:end]]
-plot!(x_data[1:100])
+
+
 # Building the model
 g = FactorGraph()
 
@@ -44,8 +46,6 @@ g = FactorGraph()
 @RV w ~ Gamma(a_w_t, b_w_t)
 @RV x_t ~ GaussianMeanPrecision(m_x_t, w_x_t)
 Autoregression(x_t, x_t_prev, a, w)
-#@RV n ~ GaussianMeanPrecision(0*rand(ARorder), 2*diagAR(ARorder))
-#@RV y_t = x_t + n
 @RV n ~ GaussianMeanPrecision(0.0, 1.0)
 c = zeros(ARorder); c[1] = 1.0
 @RV y_t = dot(c, x_t) + n
@@ -62,34 +62,27 @@ placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
 
 # Placeholder for data
 placeholder(y_t, :y_t)
-#placeholder(y_t, :y_t, dims=(ARorder,))
 
 #ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, x_t_prev, x_t, w, ids=[:A, :X_t_prev, :X_t, :W])
 
-# Inspect the subgraph for A
-# ForneyLab.draw(q.recognition_factors[:A])
-
 # Generate the variational update algorithms for each recognition factor
 algo = variationalAlgorithm(q)
 
 # Load algorithms
 eval(Meta.parse(algo))
-display(Meta.parse(algo))
 
 # Define values for prior statistics
 m_x_prev_0 = 0.0*rand(ARorder)
 w_x_prev_0 = (tiny*diagAR(ARorder))
 m_x_0 = 0.0*rand(ARorder)
 w_x_0 = (tiny*diagAR(ARorder))
-a_w_0 = 1
-b_w_0 = 10
-m_a_0 =  1.0*rand(ARorder)#mean(marginals[:a])#0.0*rand(ARorder)#[0.8068730972003983, 0.1686530319145092]
-w_a_0 =  (tiny*diagAR(ARorder))#[6.9639e5   6.81754e5; 6.81754e5  7.03203e5]#(1*diagAR(ARorder))
-
-X = Vector{Float64}(undef, length(x))
+a_w_0 = tiny
+b_w_0 = huge
+m_a_0 =  1.0*rand(ARorder)
+w_a_0 =  (tiny*diagAR(ARorder))
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(x))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(x))
@@ -110,21 +103,20 @@ m_a_t_min = m_a_0
 w_a_t_min = w_a_0
 
 marginals = Dict()
-n_its = 10
+n_its = 5
 datasetRatio = 30
 
+p = Progress(length(y), 1, "Observed ")
 for t = 1:length(y)
-    println("Observation # ", t)
+    update!(p, t)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:x_t] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_min, w=w_x_t_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
     global m_x_t_prev_min, w_x_t_prev_min, m_x_t_min, w_x_t_min,
            a_w_t_min, b_w_t_min, m_a_t_min, w_a_t_min
+
     for i = 1:n_its
-        #println("Iteration # ", i)
-
-
         data = Dict(:y_t   => y[t],
                     :m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
@@ -134,20 +126,13 @@ for t = 1:length(y)
                     :w_x_t => w_x_t_min,
                     :a_w_t => a_w_t_min,
                     :b_w_t => b_w_t_min)
-        #display(data)
+
         stepA!(data, marginals)
         stepW!(data, marginals)
         stepX_t!(data, marginals)
         stepX_t_prev!(data, marginals)
-        # Extract posterior statistics
-        #display(marginals[:a].params[:xi])
-        #print(typeof(marginals[:a]))
-
-        #display(mean(marginals[:x_t_min]))
-        #μ, Σ = marginals[:a].params[:xi], marginals[:a].params[:w]
-        #display(unsafeCov(marginals[:x_t]))
-
     end
+
     m_a[t] = unsafeMean(marginals[:a])
     w_a[t] = unsafePrecision(marginals[:a])
     m_x[t] = unsafeMean(marginals[:x_t])
@@ -165,53 +150,24 @@ for t = 1:length(y)
     w_x_t_min = w_x[t]
     a_w_t_min = a_w[t]
     b_w_t_min = b_w[t]
-    #display(marginals)
 end
 
-#from = length(x) - 700
-#using Plots
-#predicted = [ForneyLab.sample(marginals[:a])'ForneyLab.sample(marginals[:x_t_prev]) + rand()*var(marginals[:w]) for x in x[from:end]]
-#predicted = [coefs'x + rand() for x in x[from-1:end-1]]
-#predicted = [x[1] for x in X[from:end]]
 predicted = [x[1] for (t, x) in enumerate(m_x[1:end-1])]
 noise = [y[1] for y in y[1:end]]
 actual = [x[1] for x in x[2:end]]
-mse = (sum((predicted - actual).^2))/length(predicted)
-#plot([actual, noise])
+println("Δ(predicted, noise)=", mse(predicted, noise))
+println("Δ(predicted, actual)=", mse(predicted, actual))
 
-v_x = [v_x[1]^-1 for v_x in w_x[1:end-1]] # variance\n",
-upto = 90#length(x)
-scale = 1
-plot([predicted[1:upto], predicted[1:upto]], fillrange=[predicted[1:upto]- scale .* sqrt.(v_x[1:upto]),predicted[1:upto]+ scale .* sqrt.(v_x[1:upto])],
-     fillalpha = 0.2,
-     fillcolor = :red,
-     label=["inferred", "inferred"])
-#plot!(noise[1:upto], label="noised")
+v_x = [v_x[1]^-1 for v_x in w_x[1:end-1]] # variances of estimated state
+
+using Plots
+upto = 100 # limit for building a graph
+scale = 1.0 # scale for the variance
+plot([predicted[1:upto], predicted[1:upto]], fillrange=[predicted[1:upto] -
+      scale .* sqrt.(v_x[1:upto]), predicted[1:upto] +
+      scale .* sqrt.(v_x[1:upto])],
+      fillalpha = 0.2,
+      fillcolor = :red,
+      label=["inferred", "inferred"])
+plot!(noise[1:upto], label="noised")
 plot!(actual[1:upto], label="real state")
-#ylims(-1, 1)
-x = m_x
-X = []
-y = []
-for (i, x) in enumerate(x[1:end-1])
-    global y
-    insert!(y, 1, Float64(x[1]))
-    if mod(length(y), 10) == 0
-        #reverse!(y)
-        push!(X, y)
-        y = y[2:end]
-    end
-    #display(X)
-end
-X
-# using PyPlot
-#
-# n_samples = 10
-# from = length(x) - n_samples
-#
-# plot(collect(1:n_samples+1), y[from-1:end], "b*", label="y")
-# plot(collect(1:n_samples+1), x[from:end], "k--", label="true x")
-# plot(collect(1:n_samples), m_x[from:end-1], "b-", label="estimated x")
-# #fill_between(collect(1:n_samples), m_x-sqrt.(w_x), m_x+sqrt.(w_x), color="b", alpha=0.3);
-# grid("on")
-# xlabel("t")
-# legend(loc="upper left");
