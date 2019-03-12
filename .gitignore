@@ -2,3 +2,4 @@
 .gif
 gifs/
 notebooks/.ipynb_checkpoints
+models/iterative_learning.jl

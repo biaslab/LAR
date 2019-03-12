@@ -15,6 +15,6 @@
                       :name          => VariationalARIn2PPVP)
 
 @naiveVariationalRule(:node_type     => Autoregression,
-                      :outbound_type => Message{GaussianMeanPrecision},
+                      :outbound_type => Message{Gamma},
                       :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, ProbabilityDistribution, Nothing),
                       :name          => VariationalARIn3PPPV)

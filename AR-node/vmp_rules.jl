@@ -2,7 +2,8 @@ export ruleVariationalAROutVPPP,
        ruleVariationalARIn1PVPP,
        ruleVariationalARIn2PPVP,
        ruleVariationalARIn3PPPV,
-       uvector
+       uvector,
+       shift
 
 import LinearAlgebra: Symmetric, tr
 
@@ -42,8 +43,6 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
     W = Symmetric(unsafeMean(marg_w)*diagAR(order))
-    eps = 1
-    W[1] = W[1] > eps  ? eps / 1e2 : W[1]
     Message(Multivariate, GaussianMeanPrecision, m=m, w=W)
 end
 
@@ -56,7 +55,7 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
     mA = S+c*ma'
     D = unsafeCov(marg_a)+mA'*mA
     m = D^-1*mA'*unsafeMean(marg_y)
-    W = Symmetric(unsafeMean(marg_w)*D)*diagAR(order)*0.01
+    W = Symmetric(unsafeMean(marg_w)*D)
     Message(Multivariate, GaussianMeanPrecision, m=m, w=W)
 end
 

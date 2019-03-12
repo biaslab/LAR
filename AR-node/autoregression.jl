@@ -6,7 +6,7 @@ Description:
 
     A Gaussian mixture with mean-precision parameterization:
 
-    f(out, a, x, W) = 𝒩(out|Ax, W),
+    f(out, a, x, W) = 𝒩(out|Ax, W^-1),
 
     where A =    a^T
                 I	0
@@ -16,11 +16,11 @@ Interfaces:
     1. out
     2. a (autoregression coefficients)
     3. x (input vector)
-    4. γ (precision)
+    4. W (precision)
 
 Construction:
 
-    Autoregression(out, x, a, γ, id=:some_id)
+    Autoregression(out, x, a, W, id=:some_id)
 """
 mutable struct Autoregression <: SoftFactor
     id::Symbol
@@ -39,9 +39,9 @@ mutable struct Autoregression <: SoftFactor
     end
 end
 
-function AR(a::Variable, x::Variable, γ::Variable)
+function AR(a::Variable, x::Variable, W::Variable)
     out = Variable()
-    Autoregression(out, x, a, γ)
+    Autoregression(out, x, a, W)
     return out
 end
 

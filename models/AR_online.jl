@@ -18,8 +18,8 @@ diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # Observations
-coefs, x = generate_data(10000, ARorder, 1, noise_variance=0.1)
-
+coefs, x = generate_data(10000, ARorder, 1, noise_variance=1.0)
+#x = addNoise(x, noise_variance=2.0)
 g = FactorGraph()
 
 # declare priors as random variables
@@ -50,7 +50,7 @@ placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
 placeholder(m_x_t, :m_x_t, dims=(ARorder,))
 placeholder(w_x_t, :w_x_t, dims=(ARorder, ARorder))
 
-#ForneyLab.draw(g)
+ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, w, ids=[:A, :W])
@@ -63,8 +63,8 @@ eval(Meta.parse(algo))
 display(Meta.parse(algo))
 
 # Define values for prior statistics
-a_w_0 = 20
-b_w_0 = 2
+a_w_0 = tiny
+b_w_0 = huge
 m_a_0 = 5.0*rand(ARorder)
 w_a_0 = (tiny*diagAR(ARorder))
 
@@ -95,9 +95,16 @@ w_a_t_min = w_a_0
 marginals = Dict()
 n_its = 10
 
-testSize = 10
+testSize = 100
 trainSize = length(x) - testSize
 MSEs = []
+
+# Storage for predictions
+predictions = []
+aCov = []
+aMean = []
+wVar = []
+actual = [x[1] for x in x][trainSize:end]
 
 p = Progress(trainSize, 1, "Observed ")
 for t = 2:trainSize
@@ -106,10 +113,11 @@ for t = 2:trainSize
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:x_t] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_min, w=w_x_t_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
-    for i = 1:n_its
-        global m_x_t_prev_min, w_x_t_prev_min, m_x_t_min, w_x_t_min,
-               a_w_t_min, b_w_t_min, m_a_t_min, w_a_t_min
+    global m_x_t_prev_min, w_x_t_prev_min, m_x_t_min, w_x_t_min,
+           a_w_t_min, b_w_t_min, m_a_t_min, w_a_t_min
 
+
+    for i = 1:n_its
         data = Dict(:m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
                     :m_x_t_prev => m_x_t_prev_min,
@@ -118,7 +126,6 @@ for t = 2:trainSize
                     :w_x_t => w_x_t_min,
                     :a_w_t => a_w_t_min,
                     :b_w_t => b_w_t_min)
-
         stepA!(data, marginals)
         stepW!(data, marginals)
         m_a[t] = unsafeMean(marginals[:a])
@@ -138,14 +145,13 @@ for t = 2:trainSize
         a_w_t_min = a_w[t]
         b_w_t_min = b_w[t]
     end
-    #mse = plotter(marginals[:a], x, marginals[:w], testPoints, true)
-    push!(MSEs, mse([mean(marginals[:a])'x for x in x[trainSize-1:end-1]], [x[1] for x in x][trainSize:end]))
+    pred = [mean(marginals[:a])'x for x in x[trainSize-1:end-1]]
+    push!(aMean, mean(marginals[:a]))
+    push!(aCov, unsafeCov(marginals[:a]))
+    push!(wVar, mean(marginals[:w]))
+    push!(predictions, pred)
+    push!(MSEs, mse(pred, actual))
 end
 
-#gif(anim, "gifs/AR-synthetic.gif", fps = 100)
-
-predicted = [mean(marginals[:a])'x for x in x[trainSize-1:end-1]]
-actual = [x[1] for x in x][trainSize:end]
-mse_init = (sum((predicted - actual).^2))/length(predicted)
-
-plot([actual, predicted], xlabel="timestamp", ylabel = "x", label=["actual", "predicted"])
+using Plots; pyplot();
+plot(MSEs[1:100], title="mean squared error", xlabel="observations", ylabel="MSE", legend=false)

@@ -1,15 +1,11 @@
-using Plots
-
-function plotter(ma, x, mw, testPoints=100, plt=true)
-    from = length(x) - testPoints
-    predicted = [ForneyLab.sample(marginals[:a])'x + var(marginals[:w]) for x in x[from-1:end-1]]
-    actual = [x[1] for x in x[from:end]]
-    mse = (sum((predicted - actual).^2))/length(predicted)
-    if plt
-        ylims!(-1, 2)
-        plot!([actual, predicted], title = "unforeseen data", xlabel="days", ylabel="temperature", label=["actual", "predicted"])
-    end
-    return mse
-end
-
 mse(x, y) = (sum((x - y).^2))/length(y)
+
+function addNoise(clean; noise_variance)
+    noised = [clean[1] .+ sqrt(0.00001)*randn()]
+    for i in 2:length(clean)
+        sample = [clean[i][1] + sqrt(0.00001)*randn()]
+        append!(sample, noised[i-1][1:end-1])
+        push!(noised, sample)
+    end
+    return noised
+end
