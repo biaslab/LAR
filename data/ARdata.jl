@@ -30,7 +30,7 @@ function generate_coefficients(order::Int)
     # Keep generating coefficients until we come across a set of coefficients
     # that correspond to stable poles
     while !stable
-        true_a = rand(order) .- .5
+        true_a = randn(order)
         coefs =  append!([1.0], -true_a)
         reverse!(coefs)
         if maximum([abs(root) for root in roots(coefs)]) < 1
@@ -43,7 +43,7 @@ end
 
 function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     coefs = generate_coefficients(order)
-    inits = scale*rand(order)
+    inits = scale*randn(order)
     data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
     for i in 2:num+3*order

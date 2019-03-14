@@ -1,25 +1,23 @@
 using ProgressMeter
 using Revise
 using ForneyLab
-include("../AR-node/autoregression.jl")
+include( "../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
-
-include("../helpers.jl")
-
+include("../helpers/functions.jl")
 include("../data/ARdata.jl")
 import Main.ARdata: use_data, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 # order of AR model
-ARorder = 10
+ARorder = 5
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # Observations
 coefs, x = generate_data(10000, ARorder, 1, noise_variance=1.0)
-#x = addNoise(x, noise_variance=2.0)
+
 g = FactorGraph()
 
 # declare priors as random variables
@@ -66,7 +64,7 @@ display(Meta.parse(algo))
 a_w_0 = tiny
 b_w_0 = huge
 m_a_0 = 5.0*rand(ARorder)
-w_a_0 = (tiny*diagAR(ARorder))
+w_a_0 = (0.01*diagAR(ARorder))
 
 # First observations
 m_x_prev_0 = x[1]
@@ -152,6 +150,3 @@ for t = 2:trainSize
     push!(predictions, pred)
     push!(MSEs, mse(pred, actual))
 end
-
-using Plots; pyplot();
-plot(MSEs[1:100], title="mean squared error", xlabel="observations", ylabel="MSE", legend=false)

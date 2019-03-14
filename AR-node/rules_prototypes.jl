@@ -1,16 +1,16 @@
 @naiveVariationalRule(:node_type     => Autoregression,
-                      :outbound_type => Message{GaussianMeanPrecision},
+                      :outbound_type => Message{GaussianWeightedMeanPrecision},
                       :inbound_types => (Nothing, ProbabilityDistribution, ProbabilityDistribution, ProbabilityDistribution),
                       :name          => VariationalAROutVPPP)
 
 
 @naiveVariationalRule(:node_type     => Autoregression,
-                      :outbound_type => Message{GaussianMeanPrecision},
+                      :outbound_type => Message{GaussianWeightedMeanPrecision},
                       :inbound_types => (ProbabilityDistribution, Nothing, ProbabilityDistribution, ProbabilityDistribution),
                       :name          => VariationalARIn1PVPP)
 
 @naiveVariationalRule(:node_type     => Autoregression,
-                      :outbound_type => Message{GaussianMeanPrecision},
+                      :outbound_type => Message{GaussianWeightedMeanPrecision},
                       :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, Nothing, ProbabilityDistribution),
                       :name          => VariationalARIn2PPVP)
 

@@ -43,7 +43,7 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
     W = Symmetric(unsafeMean(marg_w)*diagAR(order))
-    Message(Multivariate, GaussianMeanPrecision, m=m, w=W)
+    Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
 function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate},
@@ -54,9 +54,10 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
     order == Nothing ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     D = unsafeCov(marg_a)+mA'*mA
-    m = D^-1*mA'*unsafeMean(marg_y)
-    W = Symmetric(unsafeMean(marg_w)*D)
-    Message(Multivariate, GaussianMeanPrecision, m=m, w=W)
+    mw = unsafeMean(marg_w)
+    xi = mw*mA'*unsafeMean(marg_y)
+    W = Symmetric(mw*D)
+    Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
 function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate},
@@ -65,10 +66,12 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_w :: ProbabilityDistribution{Univariate})
     my = unsafeMean(marg_y)
     order == Nothing ? defineOrder(length(my)) : order
-    D = unsafeCov(marg_x)+unsafeMean(marg_x)*unsafeMean(marg_x)'
-    m = (D^-1)*unsafeMean(marg_x)*c'*my
-    W = Symmetric(unsafeMean(marg_w)*D)
-    Message(Multivariate, GaussianMeanPrecision, m=m, w=W)
+    mx = unsafeMean(marg_x)
+    D = unsafeCov(marg_x)+mx*mx'
+    mw = unsafeMean(marg_w)
+    xi = mw*(mx*c'*my)
+    W = Symmetric(mw*D)
+    Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
 function ruleVariationalARIn3PPPV(marg_y :: ProbabilityDistribution{Multivariate},

@@ -1,12 +1,10 @@
 using ProgressMeter
 using Revise
 using ForneyLab
-include("../AR-node/autoregression.jl")
+include( "../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
-
-include("../helpers.jl")
-
+include("../helpers/functions.jl")
 include("../data/ARdata.jl")
 import Main.ARdata: use_data, generate_data
 import LinearAlgebra.I, LinearAlgebra.Symmetric
@@ -25,8 +23,8 @@ coefs, x = generate_data(10000, ARorder, 1.0, noise_variance=1.0)
 
 # Observations
 measurement_noise = 2.0
-#y = [xi[1] + sqrt(measurement_noise)*randn() for xi in x[2:end]]
-y = addNoise(x, noise_variance=measurement_noise)
+y = [xi[1] + sqrt(measurement_noise)*randn() for xi in x[ARorder:end]]
+#y = addNoise(x, noise_variance=measurement_noise)[ARorder:end]
 
 # Building the model
 g = FactorGraph()
@@ -62,50 +60,52 @@ placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
 placeholder(y_t, :y_t)
 #placeholder(y_t, :y_t, dims=(ARorder,))
 
-ForneyLab.draw(g)
+#ForneyLab.draw(g)
 
 # Specify recognition factorization
-q = RecognitionFactorization(a, x_t, x_t_prev, w, ids=[:A, :X_t, :X_t_prev, :W])
+q = RecognitionFactorization(a, x_t, w, ids=[:A, :X_t, :W])
 
 # Generate the variational update algorithms for each recognition factor
 algo = variationalAlgorithm(q)
 
 # Load algorithms
 eval(Meta.parse(algo))
-display(Meta.parse(algo))
+#display(Meta.parse(algo))
 
 # Define values for prior statistics
-m_x_prev_0 = 0.0*rand(ARorder)
-w_x_prev_0 = (1.0*diagAR(ARorder))
-a_w_0 = 1.0
-b_w_0 = 100.0
-m_a_0 =  0.0*rand(ARorder)
-w_a_0 =  (1.0*diagAR(ARorder))
+m_x_prev_0 = 0.0 .+ zeros(ARorder)
+w_x_prev_0 = (0.01*diagAR(ARorder))
+a_w_0 = 0.001
+b_w_0 = 0.001
+m_a_0 =  0.0 .+ zeros(ARorder)
+w_a_0 =  (0.01*diagAR(ARorder))
 
-m_x_prev = Vector{Vector{Float64}}(undef, length(x))
-w_x_prev = Vector{Array{Float64, 2}}(undef, length(x))
-a_w = Vector{Float64}(undef, length(x))
-b_w = Vector{Float64}(undef, length(x))
-m_a = Vector{Vector{Float64}}(undef, length(x))
-w_a = Vector{Array{Float64, 2}}(undef, length(x))
+m_x_prev = Vector{Vector{Float64}}(undef, length(y))
+w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
+a_w = Vector{Float64}(undef, length(y))
+b_w = Vector{Float64}(undef, length(y))
+m_a = Vector{Vector{Float64}}(undef, length(y))
+w_a = Vector{Array{Float64, 2}}(undef, length(y))
 
 m_x_t_prev_min = m_x_prev_0
 w_x_t_prev_min = w_x_prev_0
-a_w_t_min = marginals[:w].params[:a]
-b_w_t_min = marginals[:w].params[:b]
-m_a_t_min = mean(marginals[:a])#m_a_0
-w_a_t_min = unsafePrecision(marginals[:a])#w_a_0
+a_w_t_min = a_w_0
+b_w_t_min = b_w_0
+m_a_t_min = m_a_0
+w_a_t_min = w_a_0
 
 marginals = Dict()
-n_its = 10
+n_its = 50
 
+gammas = [[a_w_0, b_w_0]]
+acoefs = [[m_a_0, w_a_0]]
 p = Progress(length(y), 1, "Observed ")
 for t = 1:length(y)
     update!(p, t)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
-
+    #marginals[:x_t] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     for i = 1:n_its
         global m_x_t_prev_min, w_x_t_prev_min, m_x_t_min, w_x_t_min,
                a_w_t_min, b_w_t_min, m_a_t_min, w_a_t_min
@@ -113,10 +113,12 @@ for t = 1:length(y)
                     :m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
                     :a_w_t => a_w_t_min,
-                    :b_w_t => b_w_t_min)
+                    :b_w_t => b_w_t_min,
+                    :m_x_t_prev => m_x_t_prev_min,
+                    :w_x_t_prev => w_x_t_prev_min)
+
         stepX_t!(data, marginals)
-        stepX_t_prev!(data, marginals)
-        #stepA!(data, marginals)
+        stepA!(data, marginals)
         #stepW!(data, marginals)
         m_a[t] = unsafeMean(marginals[:a])
         w_a[t] = unsafePrecision(marginals[:a])
@@ -132,26 +134,52 @@ for t = 1:length(y)
         a_w_t_min = a_w[t]
         b_w_t_min = b_w[t]
     end
+    push!(gammas, [marginals[:w].params[:a], marginals[:w].params[:b]])
+    push!(acoefs, [mean(marginals[:a]), unsafePrecision(marginals[:a])])
 end
 
-from = 5000
-predicted = [x[1] for x in m_x_prev[from:end-1]]
-actual = [x[1] for x in x[from + 1:end]]
-noise = y[from:end]
+# MSE analysis
+from = 1
+predicted = [x[1] for x in m_x_prev[1:end]]
+actual = [x[1] for x in x[ARorder:end]]
+noise = [y[1] for y in y[from:end]]
 println("Δ(predicted, noise)=", mse(predicted, noise))
 println("Δ(predicted, actual)=", mse(predicted, actual))
-v_x = [v_x[1]^-1 for v_x in w_x_prev[from:end-1]]
+println("Δ(noise, actual)=", mse(noise, actual))
 
-v_x = [v_x[1]^-1 for v_x in w_x_prev[1:end-1]] # variances of estimated state
 
+# Plotting
 using Plots
-upto = 100 # limit for building a graph
+upto = 20 # limit for building a graph
 scale = 1.0 # scale for the variance
+v_x = [v_x[1]^-1 for v_x in w_x_prev[1:end-1]] # variances of estimated state
 plot([predicted[1:upto], predicted[1:upto]], fillrange=[predicted[1:upto] -
       scale .* sqrt.(v_x[1:upto]), predicted[1:upto] +
       scale .* sqrt.(v_x[1:upto])],
+      color=:black,
       fillalpha = 0.2,
       fillcolor = :red,
       label=["inferred", "inferred"])
 plot!(noise[1:upto], label="noised")
-plot!(actual[1:upto], label="real state")
+plot!(actual[1:upto], label="real state", color=:blue)
+
+using Distributions
+# Plot gamma evolution
+prior_gamma = Distributions.Gamma(gammas[1][1], 1/gammas[1][2])
+posterior_gamma = Distributions.Gamma(gammas[end][1], 1/gammas[end][2])
+plot(0:0.1:10, pdf(prior_gamma, 0:0.1:10))
+plot(0:0.01:1.5, pdf(posterior_gamma,0:0.01:1.5))
+
+prior_coefs = Distributions.Normal(acoefs[1][1][1], acoefs[1][2][1]^-1)
+posterior_coefs = Distributions.Normal(acoefs[end][1][1], acoefs[end][2][1]^-1)
+plot(-0.2:0.001:0, pdf(prior_coefs,-0.2:0.001:0))
+plot!(-0.2:0.001:0, pdf(posterior_coefs,-0.2:0.001:0))
+
+# gamma
+anim = @animate for i in 1:100:length(gammas)
+    s = plot();
+    #ylims!(minimum(actual) - .1, maximum(actual) + .1);
+    #predicted = predictions[i]
+    plot!(0:0.1:10, [pdf(prior_gamma,0:0.1:10), pdf(Distributions.Gamma(gammas[i][1], 1/gammas[i][2]),0:0.1:10)], title = "unforeseen data", xlabel="time", ylabel="value", label=["prior", "posterior"])
+end
+gif(anim, "gifs/gamma.gif", fps = 1)
