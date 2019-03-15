@@ -11,21 +11,20 @@ import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 # order of AR model
-ARorder = 10
+ARorder = 12
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 
 # synthesize AR data
-coefs, x = generate_data(10000, ARorder, 1.0, noise_variance=1.0)
+coefs, x = generate_data(1000, ARorder, 1.0, noise_variance=1.0)
 
 # daily temperature
 #x = use_data("data/daily-minimum-temperatures.csv", ARorder)
 #x = [reverse(x) for x in x]
-
 # Observations
-measurement_noise = 2.0
+measurement_noise = 0.0
 y = [xi[1] + sqrt(measurement_noise)*randn() for xi in x[ARorder:end]]
 #y = addNoise(x, noise_variance=measurement_noise)[ARorder:end]
-
+##
 # Building the model
 g = FactorGraph()
 
@@ -36,14 +35,17 @@ g = FactorGraph()
 @RV b_w_t
 @RV m_a_t
 @RV w_a_t
+@RV m_y_t
 
 @RV a ~ GaussianMeanPrecision(m_a_t, w_a_t)
 @RV x_t_prev ~ GaussianMeanPrecision(m_x_t_prev, w_x_t_prev)
 @RV w ~ Gamma(a_w_t, b_w_t)
 @RV x_t = AR(a, x_t_prev, w)
-@RV n ~ GaussianMeanPrecision(0.0, measurement_noise^-1)
+#@RV n ~ GaussianMeanVariance(0.0, measurement_noise)
 c = zeros(ARorder); c[1] = 1.0
-@RV y_t = dot(c, x_t) + n
+#@RV y_t = dot(c, x_t) + n
+@RV y_t ~ GaussianMeanPrecision(m_y_t, huge)
+DotProduct(y_t, c, x_t)
 
 #@RV n ~ GaussianMeanPrecision(zeros(ARorder), (measurement_noise*diagAR(ARorder))^-1)
 #@RV y_t = x_t + n
@@ -55,12 +57,13 @@ placeholder(a_w_t, :a_w_t)
 placeholder(b_w_t, :b_w_t)
 placeholder(m_a_t, :m_a_t, dims=(ARorder,))
 placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
+#placeholder(n_w_t, :n_w_t)
 
 # Placeholder for data
-placeholder(y_t, :y_t)
+placeholder(m_y_t, :m_y_t)
 #placeholder(y_t, :y_t, dims=(ARorder,))
 
-#ForneyLab.draw(g)
+ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, x_t, w, ids=[:A, :X_t, :W])
@@ -70,15 +73,15 @@ algo = variationalAlgorithm(q)
 
 # Load algorithms
 eval(Meta.parse(algo))
-#display(Meta.parse(algo))
+display(Meta.parse(algo))
 
 # Define values for prior statistics
-m_x_prev_0 = 0.0 .+ zeros(ARorder)
-w_x_prev_0 = (0.01*diagAR(ARorder))
-a_w_0 = 0.001
-b_w_0 = 0.001
-m_a_0 =  0.0 .+ zeros(ARorder)
-w_a_0 =  (0.01*diagAR(ARorder))
+m_x_prev_0 = randn(ARorder)
+w_x_prev_0 = (0.001*diagAR(ARorder))
+a_w_0 = 1.0
+b_w_0 = 1.0
+m_a_0 =  randn(ARorder)
+w_a_0 =  (0.00001*diagAR(ARorder));
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
@@ -95,7 +98,7 @@ m_a_t_min = m_a_0
 w_a_t_min = w_a_0
 
 marginals = Dict()
-n_its = 50
+n_its = 10
 
 gammas = [[a_w_0, b_w_0]]
 acoefs = [[m_a_0, w_a_0]]
@@ -105,18 +108,19 @@ for t = 1:length(y)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
-    #marginals[:x_t] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
+    #marginals[:y_t] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=y[t], w=huge)
+    #display(t)
     for i = 1:n_its
         global m_x_t_prev_min, w_x_t_prev_min, m_x_t_min, w_x_t_min,
-               a_w_t_min, b_w_t_min, m_a_t_min, w_a_t_min
-        data = Dict(:y_t   => y[t],
+               a_w_t_min, b_w_t_min, m_a_t_min, w_a_t_min, n_w_t_min
+        data = Dict(:m_y_t   => y[t],
                     :m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
                     :a_w_t => a_w_t_min,
                     :b_w_t => b_w_t_min,
                     :m_x_t_prev => m_x_t_prev_min,
                     :w_x_t_prev => w_x_t_prev_min)
-
+        #display(marginals[:n])
         stepX_t!(data, marginals)
         stepA!(data, marginals)
         #stepW!(data, marginals)
@@ -126,6 +130,7 @@ for t = 1:length(y)
         w_x_prev[t] = unsafePrecision(marginals[:x_t])
         a_w[t] = marginals[:w].params[:a]
         b_w[t] = marginals[:w].params[:b]
+        #n_w[t] = unsafeCov(marginals[:n])
         # Store to buffer
         m_a_t_min = m_a[t]
         w_a_t_min = w_a[t]
@@ -137,7 +142,7 @@ for t = 1:length(y)
     push!(gammas, [marginals[:w].params[:a], marginals[:w].params[:b]])
     push!(acoefs, [mean(marginals[:a]), unsafePrecision(marginals[:a])])
 end
-
+##
 # MSE analysis
 from = 1
 predicted = [x[1] for x in m_x_prev[1:end]]
@@ -146,11 +151,11 @@ noise = [y[1] for y in y[from:end]]
 println("Δ(predicted, noise)=", mse(predicted, noise))
 println("Δ(predicted, actual)=", mse(predicted, actual))
 println("Δ(noise, actual)=", mse(noise, actual))
-
+##
 
 # Plotting
 using Plots
-upto = 20 # limit for building a graph
+upto = 100 # limit for building a graph
 scale = 1.0 # scale for the variance
 v_x = [v_x[1]^-1 for v_x in w_x_prev[1:end-1]] # variances of estimated state
 plot([predicted[1:upto], predicted[1:upto]], fillrange=[predicted[1:upto] -
@@ -168,7 +173,7 @@ using Distributions
 prior_gamma = Distributions.Gamma(gammas[1][1], 1/gammas[1][2])
 posterior_gamma = Distributions.Gamma(gammas[end][1], 1/gammas[end][2])
 plot(0:0.1:10, pdf(prior_gamma, 0:0.1:10))
-plot(0:0.01:1.5, pdf(posterior_gamma,0:0.01:1.5))
+plot!(0:0.01:1.5, pdf(posterior_gamma,0:0.01:1.5))
 
 prior_coefs = Distributions.Normal(acoefs[1][1][1], acoefs[1][2][1]^-1)
 posterior_coefs = Distributions.Normal(acoefs[end][1][1], acoefs[end][2][1]^-1)
