@@ -39,7 +39,6 @@ function generate_coefficients(order::Int)
             stable = true
         end
     end
-    display(true_a)
     return true_a
 end
 
@@ -55,18 +54,6 @@ function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     end
     data = data[1+3*order:end]
     return coefs, data
-end
-
-function stacked_data(num::Int, order::Int, scale::Real; coefs, noise_variance=1)
-    inits = scale*randn(order)
-    data = Vector{Vector{Float64}}(undef, num)
-    data[1] = insert!(inits[1:end-1], 1, coefs[1]'inits)
-    for i in 2:num
-        display(i)
-        data[i] = insert!(data[i-1][1:end-1], 1, coefs[i]'data[i-1])
-        data[i][1] += sqrt(noise_variance)*randn()
-    end
-    return data
 end
 
 end  # module
