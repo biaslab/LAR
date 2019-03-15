@@ -80,6 +80,7 @@ m_a_t_min = m_a_0
 w_a_t_min = w_a_0
 
 marginals = Dict()
+# VMP iterations
 n_its = 10
 
 # Storage for predictions
