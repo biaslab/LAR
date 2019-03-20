@@ -1,11 +1,11 @@
 # joint estimations of x and a
 
 using ProgressMeter
-using Revise
 using ForneyLab
 include( "../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
+include( "../AR-node/observationAR.jl")
 include("../helpers/functions.jl")
 include("../data/ARdata.jl")
 import Main.ARdata: use_data, generate_data
@@ -18,7 +18,7 @@ diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # AR data
-a_w = 1.0; b_w = 2.0
+a_w = 1.0^2/tiny; b_w = 1.0/tiny
 process_noise = b_w/a_w
 coefs, x = generate_data(10000, ARorder, 1, noise_variance=process_noise)
 
@@ -33,14 +33,16 @@ g = FactorGraph()
 @RV m_a_t
 @RV w_a_t
 @RV m_y_t
+@RV w_y_t
 
 @RV a ~ GaussianMeanPrecision(m_a_t, w_a_t)
 @RV x_t_prev ~ GaussianMeanPrecision(m_x_t_prev, w_x_t_prev)
 @RV w ~ Gamma(a_w, b_w)
 @RV x_t = AR(a, x_t_prev, w)
-c = zeros(ARorder); c[1] = 1.0
-@RV y_t ~ GaussianMeanPrecision(m_y_t, huge)
-DotProduct(y_t, c, x_t)
+observationAR(m_y_t, x_t, w_y_t)
+#c = zeros(ARorder); c[1] = 1.0
+#@RV y_t ~ GaussianMeanPrecision(m_y_t, huge)
+#DotProduct(y_t, c, x_t)
 
 # Placeholders for prior
 placeholder(m_a_t, :m_a_t, dims=(ARorder,))
@@ -50,17 +52,20 @@ placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
 placeholder(m_x_t_prev, :m_x_t_prev, dims=(ARorder,))
 placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
 placeholder(m_y_t, :m_y_t)
+placeholder(w_y_t, :w_y_t)
 
-#ForneyLab.draw(g)
+ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, x_t, ids=[:A :X_t])
 
 # Generate the variational update algorithms for each recognition factor
 algo = variationalAlgorithm(q)
+algoF = freeEnergyAlgorithm(q)
 
 # Load algorithms
 eval(Meta.parse(algo))
+eval(Meta.parse(algoF))
 display(Meta.parse(algo))
 
 # Define values for prior statistics
@@ -85,6 +90,7 @@ n_its = 10
 
 # Storage for predictions
 predictions = []
+F = []
 
 p = Progress(length(y), 1, "Observed ")
 for t in 1:length(y)
@@ -97,6 +103,7 @@ for t in 1:length(y)
 
     for i = 1:n_its
         data = Dict(:m_y_t => y[t],
+                    :w_y_t => huge,
                     :m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
                     :m_x_t_prev => m_x_t_prev_min,
@@ -111,5 +118,7 @@ for t in 1:length(y)
         w_a_t_min = w_a[t]
         m_x_t_prev_min = m_x_prev[t]
         w_x_t_prev_min = w_x_prev[t]
+        push!(F, freeEnergy(data, marginals))
+
     end
 end

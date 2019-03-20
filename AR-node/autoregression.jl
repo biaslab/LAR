@@ -1,5 +1,6 @@
-import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!
-export Autoregression, AR, slug
+import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!, averageEnergy
+import SpecialFunctions: polygamma
+export Autoregression, AR, slug, averageEnergy
 
 """
 Description:
@@ -27,22 +28,37 @@ mutable struct Autoregression <: SoftFactor
     interfaces::Vector{Interface}
     i::Dict{Symbol,Interface}
 
-    function Autoregression(out, x, a, γ; id=generateId(Autoregression))
-        @ensureVariables(out, x, a, γ)
+    function Autoregression(out, a, x, w; id=generateId(Autoregression))
+        @ensureVariables(out, x, a, w)
         self = new(id, Array{Interface}(undef, 4), Dict{Symbol,Interface}())
         addNode!(currentGraph(), self)
         self.i[:out] = self.interfaces[1] = associate!(Interface(self), out)
         self.i[:x] = self.interfaces[2] = associate!(Interface(self), x)
         self.i[:a] = self.interfaces[3] = associate!(Interface(self), a)
-        self.i[:W] = self.interfaces[4] = associate!(Interface(self), γ)
+        self.i[:W] = self.interfaces[4] = associate!(Interface(self), w)
         return self
     end
 end
 
-function AR(a::Variable, x::Variable, W::Variable)
+function AR(a::Variable, x::Variable, w::Variable)
     out = Variable()
-    Autoregression(out, x, a, W)
+    Autoregression(out, a, x, w)
     return out
 end
 
 slug(::Type{Autoregression}) = "AR"
+
+# Average energy functional
+function averageEnergy(::Type{Autoregression},
+                       marg_y::ProbabilityDistribution{Multivariate},
+                       marg_a::ProbabilityDistribution{Multivariate},
+                       marg_x::ProbabilityDistribution{Multivariate},
+                       marg_w::ProbabilityDistribution{Univariate})
+    dim = length(mean(marg_y))
+    mA = S+c*unsafeMean(marg_a)'
+    ma = unsafeMean(marg_a)
+    my = unsafeMean(marg_y)
+    mx = unsafeMean(marg_x)
+    B = tr(unsafeCov(marg_y) + my*my' - 2*my*mx'*mA' + mx*mx'*unsafeCov(marg_a) + (S'*S+ma*ma')*(unsafeCov(marg_x)+mx*mx'))
+    -0.5*(polygamma(1, marg_w.params[:a]) - log(marg_w.params[:b]) - log(sqrt((2*pi)^dim)) - mean(marg_w)*B)
+end
