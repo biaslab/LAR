@@ -72,7 +72,7 @@ display(Meta.parse(algoF))
 m_a_0 = 0.0*rand(ARorder)
 w_a_0 = (tiny*diagAR(ARorder))
 m_x_prev_0 = x[ARorder - 1]
-w_x_prev_0 = (0.1*diagAR(ARorder))
+w_x_prev_0 = (huge*diagAR(ARorder))
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
@@ -113,7 +113,7 @@ for t in 1:length(y)
         m_a[t] = unsafeMean(marginals[:a])
         w_a[t] = unsafePrecision(marginals[:a])
         m_x_prev[t] = unsafeMean(marginals[:x_t])
-        w_x_prev[t] = (huge*diagAR(ARorder))
+        w_x_prev[t] = unsafePrecision(marginals[:x_t])
         m_a_t_min = m_a[t]
         w_a_t_min = w_a[t]
         m_x_t_prev_min = m_x_prev[t]
