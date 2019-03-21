@@ -32,14 +32,14 @@ g = FactorGraph()
 @RV w_x_t_prev
 @RV m_a_t
 @RV w_a_t
-@RV m_y_t
-@RV w_y_t
+@RV m_x_t
+@RV w_x_t
 
 @RV a ~ GaussianMeanPrecision(m_a_t, w_a_t)
 @RV x_t_prev ~ GaussianMeanPrecision(m_x_t_prev, w_x_t_prev)
 @RV w ~ Gamma(a_w, b_w)
 @RV x_t = AR(a, x_t_prev, w)
-observationAR(m_y_t, x_t, w_y_t)
+@RV x_t ~ GaussianMeanPrecision(m_x_t, w_x_t)
 
 # Placeholders for prior
 placeholder(m_a_t, :m_a_t, dims=(ARorder,))
@@ -48,13 +48,13 @@ placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
 # Placeholder for data
 placeholder(m_x_t_prev, :m_x_t_prev, dims=(ARorder,))
 placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
-placeholder(m_y_t, :m_y_t)
-placeholder(w_y_t, :w_y_t)
+placeholder(m_x_t, :m_x_t, dims=(ARorder,))
+placeholder(w_x_t, :w_x_t, dims=(ARorder, ARorder))
 
 ForneyLab.draw(g)
 
 # Specify recognition factorization
-q = RecognitionFactorization(a, x_t, ids=[:A :X_t])
+q = RecognitionFactorization(a, x_t, x_t_prev, w, ids=[:A :X_t :X_t_prev :W])
 
 # Generate the variational update algorithms for each recognition factor
 algo = variationalAlgorithm(q)
