@@ -61,5 +61,5 @@ function averageEnergy(::Type{Autoregression},
     mx = unsafeMean(marg_x)
     B = tr(unsafeCov(marg_y) + my*my' - 2*my*mx'*mA' + mx*mx'*unsafeCov(marg_a) + (S'*S+ma*ma')*(unsafeCov(marg_x)+mx*mx'))
 
-    -0.5*(polygamma(1, marg_w.params[:a]) - log(marg_w.params[:b]) - log(sqrt((2*pi)^dim)) + mean(marg_w)*B)
+    -0.5*(polygamma(0, marg_w.params[:a]) - log(marg_w.params[:b]) - log(sqrt((2*pi)^dim)) + mean(marg_w)*B)
 end
