@@ -66,7 +66,7 @@ algoF = freeEnergyAlgorithm(q)
 # Load algorithms
 eval(Meta.parse(algo))
 eval(Meta.parse(algoF))
-display(Meta.parse(algo))
+display(Meta.parse(algoF))
 
 # Define values for prior statistics
 m_a_0 = 0.0*rand(ARorder)
