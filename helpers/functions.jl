@@ -1,4 +1,10 @@
-mse(x, y) = (sum((x - y).^2))/length(y)
+mse(x, y) = sum((x - y).^2)/length(y)
+
+function wmse(x, y; weight=1)
+    T = length(y)
+    a = [T-i+1 for i in T:-1:1]
+    sum(a .* (x - y).^2)/weight*T
+end
 
 function addNoise(clean; noise_variance)
     noised = [clean[1] .+ sqrt(noise_variance)*randn()]
