@@ -1,9 +1,9 @@
 mse(x, y) = sum((x - y).^2)/length(y)
 
-function wmse(x, y; weight=1)
+function wmse(x, y, vars=ones(length(y)))
     T = length(y)
-    a = [T-i+1 for i in T:-1:1]
-    sum(a .* (x - y).^2)/weight*T
+    a = [exp(k-T) for k in 1:T]
+    a'*((x - y).^2 .* vars)
 end
 
 function addNoise(clean; noise_variance)

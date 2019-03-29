@@ -20,7 +20,7 @@ x = []
 # AR data
 a_w = 1.0^2/tiny; b_w = 1.0/tiny
 process_noise = b_w/a_w
-coefs, x = generate_data(10000, ARorder, 1, noise_variance=process_noise)
+coefs, x = generate_data(100, ARorder, 1, noise_variance=process_noise)
 
 # Observations
 y = [xi[1] for xi in x[ARorder:end]]
@@ -86,7 +86,8 @@ marginals = Dict()
 n_its = 10
 
 # Storage for predictions
-predictions = []
+means = []
+precisions = []
 F = []
 
 p = Progress(length(y), 1, "Observed ")
@@ -115,7 +116,7 @@ for t in 1:length(y)
         w_a_t_min = w_a[t]
         m_x_t_prev_min = m_x_prev[t]
         w_x_t_prev_min = w_x_prev[t]
-        push!(F, freeEnergy(data, marginals))
+        push!(F, log(abs(Complex(freeEnergy(data, marginals)))))
 
     end
 end

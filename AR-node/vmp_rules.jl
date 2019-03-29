@@ -84,5 +84,6 @@ function ruleVariationalARIn3PPPV(marg_y :: ProbabilityDistribution{Multivariate
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
     B = tr(unsafeCov(marg_y) + my*my' - 2*my*mx'*mA' + mx*mx'*unsafeCov(marg_a) + (S'*S+ma*ma')*(unsafeCov(marg_x)+mx*mx'))
-    Message(Gamma, a=3/2, b= B/2)
+    order == Nothing ? defineOrder(length(my)) : order
+    Message(Gamma, a=order/2 + 1, b= B/2)
 end

@@ -30,6 +30,7 @@ end
 function averageEnergy(::Type{observationAR}, marg_out::ProbabilityDistribution{Univariate, PointMass}, marg_mean::ProbabilityDistribution{Multivariate}, marg_prec::ProbabilityDistribution{Univariate, PointMass})
     mx = unsafeMean(marg_mean)
     Vx = unsafeCov(marg_mean)
-    - 0.5*log(2*pi) + 0.5*unsafeLogMean(marg_prec)
+    order = length(mx)
+    - order/2*log(2*pi) + 0.5*unsafeLogMean(marg_prec)
     + 0.5*unsafeMean(marg_prec)*(unsafeMean(marg_out) - 2*mx[1] - (Vx + mx*mx')[1])
 end

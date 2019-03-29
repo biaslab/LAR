@@ -20,7 +20,7 @@ x = []
 # AR data
 a_w = 1.0; b_w = 2.0
 process_noise = b_w/a_w
-coefs, x = generate_data(10000, ARorder, 1, noise_variance=2.0)
+coefs, x = generate_data(1000, ARorder, 1, noise_variance=2.0)
 
 # Observations
 measurement_noise = 1.0
@@ -67,7 +67,7 @@ display(Meta.parse(algo))
 # Define values for prior statistics
 m_a_0 = 0.0*rand(ARorder)
 w_a_0 = (tiny*diagAR(ARorder))
-m_x_prev_0 = x[ARorder - 1]
+m_x_prev_0 = 0.0*rand(ARorder)
 w_x_prev_0 = (0.1*diagAR(ARorder))
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
@@ -83,8 +83,13 @@ w_a_t_min = w_a_0
 marginals = Dict()
 n_its = 10
 
-# Storage for predictions
-predictions = []
+# Storage for estimations
+# FIXME: redundant
+means = []
+precisions = []
+# Storage for WMSE
+WMSEs = []
+window = 10
 
 p = Progress(length(y), 1, "Observed ")
 for t in 1:length(y)
@@ -92,7 +97,6 @@ for t in 1:length(y)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w, b=b_w)
-    push!(predictions, m_a_t_min'm_x_t_prev_min)
     global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min
 
     for i = 1:n_its
@@ -106,10 +110,13 @@ for t in 1:length(y)
         m_a[t] = unsafeMean(marginals[:a])
         w_a[t] = unsafePrecision(marginals[:a])
         m_x_prev[t] = unsafeMean(marginals[:x_t])
-        w_x_prev[t] = (huge*diagAR(ARorder))
+        w_x_prev[t] = unsafePrecision(marginals[:x_t])
         m_a_t_min = m_a[t]
         w_a_t_min = w_a[t]
         m_x_t_prev_min = m_x_prev[t]
         w_x_t_prev_min = w_x_prev[t]
     end
+    push!(means, m_x_prev[t][1])
+    push!(precisions, w_x_prev[t][1])
+    push!(WMSEs, wmse(y[1:t], means, 1 ./ precisions))
 end
