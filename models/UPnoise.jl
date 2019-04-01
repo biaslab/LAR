@@ -145,11 +145,11 @@ eval(Meta.parse(algoF))
 # end
 
 # Define values for prior statistics
-m_a_0 = 1.0*rand(ARorder)
-w_a_0 = (0.0001*diagAR(ARorder))
+m_a_0 = zeros(ARorder)
+w_a_0 = (0.01*diagAR(ARorder))
 m_x_prev_0 = 1.0*rand(ARorder)
 w_x_prev_0 = (0.0001*diagAR(ARorder))
-a_w_0 = 0.001
+a_w_0 = 0.00001
 b_w_0 = 0.001
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
@@ -206,6 +206,6 @@ for t in 1:length(y)
         w_x_t_prev_min = w_x_prev[t]
         a_w_t_min = a_w[t]
         b_w_t_min = b_w[t]
-        push!(F, freeEnergy(data, marginals))
+        push!(F, abs(log(Complex((freeEnergy(data, marginals))))))
     end
 end

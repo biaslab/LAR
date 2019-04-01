@@ -58,6 +58,11 @@ end
 function generate_sin(num::Int, order=2)
     x_range = 1:.1:num
     y = [sin(x) for x in x_range]
+    data = []
+    for i in 2:length(y)
+        push!(data, [y[i], y[i-1]])
+    end
+    return [2.0, -1.0], data
 end
 
 end  # module
