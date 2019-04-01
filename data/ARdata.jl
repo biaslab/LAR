@@ -42,7 +42,6 @@ function generate_coefficients(order::Int)
     return true_a
 end
 
-
 function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     coefs = generate_coefficients(order)
     inits = scale*randn(order)
@@ -54,6 +53,11 @@ function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     end
     data = data[1+3*order:end]
     return coefs, data
+end
+
+function generate_sin(num::Int, order=2)
+    x_range = 1:.1:num
+    y = [sin(x) for x in x_range]
 end
 
 end  # module
