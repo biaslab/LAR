@@ -55,14 +55,27 @@ function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     return coefs, data
 end
 
-function generate_sin(num::Int, order=2)
-    x_range = 1:.1:num
-    y = [sin(x) for x in x_range]
-    data = []
-    for i in 2:length(y)
-        push!(data, [y[i], y[i-1]])
+function generate_sin(num::Int, noise_variance=1/5; order=2)
+    coefs = [2cos(1), -1]
+    inits = [sin(1), sin(0)]
+    data = Vector{Vector{Float64}}(undef, num)
+    data[1] = inits
+    for i in 2:num+3*order
+        data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
+        data[i][1] += sqrt(noise_variance)*randn()
     end
-    return [2.0, -1.0], data
+    data = data[1+3*order:end]
+    return coefs, data
+end
+
+function predict(a, x, upto=2)
+    predictions = []
+    for i in 1:upto
+        x̂ = a'*x
+        push!(predictions, x̂)
+        x = insert!(x[1:end-1], 1, x̂)
+    end
+    return predictions
 end
 
 end  # module

@@ -8,19 +8,20 @@ include("../AR-node/vmp_rules.jl")
 include( "../AR-node/observationAR.jl")
 include("../helpers/functions.jl")
 include("../data/ARdata.jl")
-import Main.ARdata: use_data, generate_data
+import Main.ARdata: use_data, generate_data, generate_sin
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 # order of AR model
-ARorder = 10
+ARorder = 2
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # AR data
-a_w = 1.0^2/tiny; b_w = 1.0/tiny
+a_w = 1.0/tiny^2; b_w = 1.0/tiny
 process_noise = b_w/a_w
-coefs, x = generate_data(100, ARorder, 1, noise_variance=process_noise)
+#x = use_data("data/daily-minimum-temperatures.csv", ARorder)#generate_data(100, ARorder, 1, noise_variance=process_noise)
+coefs, x = generate_sin(100, 2, tiny)
 
 # Observations
 y = [xi[1] for xi in x[ARorder:end]]
@@ -96,7 +97,7 @@ for t in 1:length(y)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w, b=b_w)
-    push!(predictions, m_a_t_min'm_x_t_prev_min)
+    #push!(predictions, m_a_t_min'm_x_t_prev_min)
     global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min
 
     for i = 1:n_its
