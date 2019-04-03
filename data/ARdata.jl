@@ -58,7 +58,7 @@ end
 function generate_sin(num::Int, noise_variance=1/5; order=2)
     coefs = [2cos(1), -1]
     inits = [sin(1), sin(0)]
-    data = Vector{Vector{Float64}}(undef, num)
+    data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
     for i in 2:num+3*order
         data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
