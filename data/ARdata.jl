@@ -58,13 +58,13 @@ end
 function generate_sin(num::Int, noise_variance=1/5; order=2)
     coefs = [2cos(1), -1]
     inits = [sin(1), sin(0)]
-    data = Vector{Vector{Float64}}(undef, num+3*order)
+    data = Vector{Vector{Float64}}(undef, num+10*order)
     data[1] = inits
-    for i in 2:num+3*order
+    for i in 2:num+10*order
         data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
         data[i][1] += sqrt(noise_variance)*randn()
     end
-    data = data[1+3*order:end]
+    data = data[1+10*order:end]
     return coefs, data
 end
 
