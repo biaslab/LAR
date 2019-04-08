@@ -1,4 +1,4 @@
-# Unknow process and measurement noises
+# Unknown process and measurement noises
 # joint estimations of x, a and w (process noise)
 
 using ProgressMeter
@@ -73,8 +73,8 @@ eval(Meta.parse(algoF))
 
 # Define values for prior statistics
 m_a_0 = zeros(ARorder)
-w_a_0 = 0.1*diagAR(ARorder)
-m_x_prev_0 = 0.0*rand(ARorder)
+w_a_0 = diagAR(ARorder)
+m_x_prev_0 = zeros(ARorder)
 w_x_prev_0 = (0.1*diagAR(ARorder))
 a_w_0 = 3
 b_w_0 = 1
@@ -94,10 +94,9 @@ a_w_t_min = a_w_0
 b_w_t_min = b_w_0
 
 marginals = Dict()
-n_its = 1
+n_its = 5
 
 # Storage for predictions
-predictions = []
 F = []
 
 p = Progress(length(y), 1, "Observed ")
@@ -106,12 +105,11 @@ for t in 1:length(y)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
-    push!(predictions, m_a_t_min'm_x_t_prev_min)
     global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min, a_w_t_min, b_w_t_min
 
     for i = 1:n_its
         data = Dict(:m_y_t => y[t],
-                    :w_y_t => measurement_noise,
+                    :w_y_t => measurement_noise^-1,
                     :m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
                     :m_x_t_prev => m_x_t_prev_min,
@@ -136,3 +134,34 @@ for t in 1:length(y)
         push!(F, abs(log(Complex((freeEnergy(data, marginals))))))
     end
 end
+
+println("Coefs\n=========")
+println("Estimated ", mean(marginals[:a]))
+println("True ", coefs)
+
+println("Process noise variance\n=========")
+println("Estimated ", mean(marginals[:w]))
+println("True ", process_noise)
+
+# Plotting
+using Plots
+from = 1
+upto = 40 # limit for building a graph
+scale = 1.0 # scale for the variance
+v_x = [v_x[1]^-1 for v_x in w_x_prev[1:end]] # variances of estimated state
+noise = [y[1] for y in y[from:end]] # noisy observations
+estimated = [x[1] for x in m_x_prev[from:end]]
+real = [x[1] for x in x[ARorder:end]]
+scatter(noise[from:upto], label="noisy observations",
+        markershape = :xcross, markeralpha = 0.6,
+        markersize = 2)
+plot!([estimated[from:upto], estimated[from:upto]], fillrange=[estimated[from:upto] -
+      scale .* sqrt.(v_x[from:upto]), estimated[from:upto] +
+      scale .* sqrt.(v_x[from:upto])],
+      linestyle=:dash,linewidth = 2,
+      color=:black,
+      fillalpha = 0.2,
+      fillcolor = :black,
+      label=["inferred", "inferred"])
+plot!(real[from:upto], color = :magenta, linewidth = 1.0, label="real state")
+pAR = plot!(title="AR($ARorder)", legend=false)
