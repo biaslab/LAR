@@ -55,8 +55,9 @@ function generate_data(num::Int, order::Int, scale::Real; noise_variance=1)
     return coefs, data
 end
 
-function generate_sin(num::Int, noise_variance=1/5; order=2)
+function generate_sin(num::Int, noise_variance=1/5)
     coefs = [2cos(1), -1]
+    order = length(coefs)
     inits = [sin(1), sin(0)]
     data = Vector{Vector{Float64}}(undef, num+10*order)
     data[1] = inits

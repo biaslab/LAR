@@ -11,6 +11,12 @@ order, c, S = Nothing, Nothing, Nothing
 
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 
+function ARnoiseMatrix(dim, variance)
+    matrix = tiny*diagAR(dim)
+    matrix[1] = variance
+    return matrix
+end
+
 function shift(dim)
     S = diagAR(dim)
     for i in dim:-1:2
@@ -42,7 +48,7 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
     order == Nothing ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
-    W = Symmetric(unsafeMean(marg_w)*diagAR(order))
+    W = Symmetric(unsafeMean(marg_w)^-1*diagAR(order))
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
@@ -54,7 +60,7 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
     order == Nothing ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     D = unsafeCov(marg_a)+mA'*mA
-    mw = unsafeMean(marg_w)
+    mw = unsafeMean(marg_w)^-1
     xi = mw*mA'*unsafeMean(marg_y)
     W = Symmetric(mw*D)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
@@ -68,7 +74,7 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
     order == Nothing ? defineOrder(length(my)) : order
     mx = unsafeMean(marg_x)
     D = unsafeCov(marg_x)+mx*mx'
-    mw = unsafeMean(marg_w)
+    mw = unsafeMean(marg_w)^-1
     xi = mw*(mx*c'*my)
     W = Symmetric(mw*D)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
