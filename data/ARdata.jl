@@ -69,14 +69,4 @@ function generate_sin(num::Int, noise_variance=1/5)
     return coefs, data
 end
 
-function predict(a, x, upto=2)
-    predictions = []
-    for i in 1:upto
-        x̂ = a'*x
-        push!(predictions, x̂)
-        x = insert!(x[1:end-1], 1, x̂)
-    end
-    return predictions
-end
-
 end  # module

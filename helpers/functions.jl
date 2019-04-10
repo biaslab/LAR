@@ -15,3 +15,13 @@ function addNoise(clean; noise_variance)
     end
     return noised
 end
+
+function predict(a, x, upto=2)
+    predictions = []
+    for i in 1:upto
+        x̂ = a'*x
+        push!(predictions, x̂)
+        x = insert!(x[1:end-1], 1, x̂)
+    end
+    return predictions
+end
