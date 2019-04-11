@@ -1,4 +1,4 @@
-import ForneyLab: @composite, DotProduct, GaussianMeanPrecision, unsafeLogMean, unsafeMean, unsafeCov
+import ForneyLab: @composite, DotProduct, GaussianMeanPrecision, unsafeLogMean, unsafeMean, unsafeCov, VariateType
 export observationAR, ruleVBobservationARIn2, freeEnergy
 
 @composite observationAR (y, x, z) begin
@@ -27,7 +27,9 @@ end
 
 
 # Average energy functional
-function averageEnergy(::Type{observationAR}, marg_out::ProbabilityDistribution{Univariate, PointMass}, marg_mean::ProbabilityDistribution{Multivariate}, marg_prec::ProbabilityDistribution{Univariate, PointMass})
+function averageEnergy(::Type{observationAR}, marg_out::ProbabilityDistribution{Univariate, PointMass},
+                       marg_mean::ProbabilityDistribution{V},
+                       marg_prec::ProbabilityDistribution{Univariate, PointMass}) where V<:VariateType
     mx = unsafeMean(marg_mean)
     Vx = unsafeCov(marg_mean)
     order = length(mx)

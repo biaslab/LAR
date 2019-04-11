@@ -20,7 +20,7 @@ x = []
 # AR data
 a_w = 1.0/tiny^2; b_w = 1.0/tiny
 process_noise = b_w/a_w
-#x = use_data("data/daily-minimum-temperatures.csv", ARorder)#generate_data(100, ARorder, 1, noise_variance=process_noise)
+#x = use_data("data/temperature.csv", ARorder)#generate_data(100, ARorder, 1, noise_variance=process_noise)
 coefs, x = generate_sin(100, 2, tiny)
 
 # Observations
