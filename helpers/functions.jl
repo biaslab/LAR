@@ -2,8 +2,8 @@ mse(x, y) = sum((x - y).^2)/length(y)
 
 function wmse(x, y, vars=ones(length(y)))
     T = length(y)
-    a = [exp(k-T) for k in 1:T]
-    a'*((x - y).^2 ./ vars)
+    a = ones(T)#[exp(k-T) for k in 1:T]
+    a'*((x - y).^2)
 end
 
 function addNoise(clean; noise_variance)
