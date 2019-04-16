@@ -81,11 +81,11 @@ function dump(data, coefs; folder=".")
     data = push!(data, coefs)
     df = DataFrame(hcat(data...)')
     order = length(data[1])
-    CSV.write("AR($order).csv", df)
+    CSV.write(folder*"/AR($order).csv", df)
 end
 
 function read_dump(filename)
-    df = File("AR(2).csv") |> DataFrame
+    df = File(filename) |> DataFrame
     matrix = convert(Matrix, df)
     matrix = [matrix[i, :] for i in 1:size(matrix, 1)]
     coefs = matrix[end]
