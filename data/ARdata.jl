@@ -1,24 +1,32 @@
 module ARdata
 import PolynomialRoots.roots
 import CSV: File
-import DataFrames: DataFrame, names!
+import DataFrames: DataFrame, names!, dropmissing!
 
 # Filter bad data
-FloatParse(x) = try
+FloatParse(x) =
+try
     parse(Float64, x)
     return true
 catch
     return false
 end
 
-function use_data(filepath::String, order::Int)
-    df = File(filepath) |> DataFrame
+function use_data(filepath::String, order::Int; col, delim=',')
+    df = File(filepath, delim=delim) |> DataFrame
     x = []
-    names!(df, [:timestamp, :value])
-    filter!(row -> FloatParse(row[:value]) == true, df)
+    df = DataFrame(value=df[col])
+    #dropmissing!(df)
+    if typeof(df[1, 1]) == String
+        filter!(row -> FloatParse(row[:value]) == true, df)
+    end
     # Data
     for i in range(1, stop=size(df, 1) - order)
-        xi = map(x->parse(Float64,x), df[i:order+i - 1, :value])
+        if typeof(df[i, 1]) == String
+            xi = map(x->parse(Float64,x), df[i:order+i - 1, :value])
+        elseif typeof(df[i, 1]) == Float64
+            xi = map(x->convert(Float64,x), df[i:order+i - 1, :value])
+        end
         push!(x, xi)
     end
     return x
