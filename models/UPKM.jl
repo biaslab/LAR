@@ -10,7 +10,7 @@ include("../AR-node/vmp_rules.jl")
 include( "../AR-node/observationAR.jl")
 include("../helpers/functions.jl")
 include("../data/ARdata.jl")
-import Main.ARdata: use_data, generate_data
+import Main.ARdata: loadAR, generateAR, writeAR, readAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
@@ -22,7 +22,7 @@ x = []
 # AR data
 a_w = 1.0; b_w = 1.0
 process_noise = a_w/b_w
-coefs, x = generate_data(1000, ARorder, 1, noise_variance=process_noise)
+coefs, x = generateAR(1000, ARorder, 1, noise_variance=process_noise)
 
 # Observations
 measurement_noise = 1.0

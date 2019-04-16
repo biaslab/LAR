@@ -1,7 +1,7 @@
 module ARdata
+using CSV
+using DataFrames
 import PolynomialRoots.roots
-import CSV: File
-import DataFrames: DataFrame, names!, dropmissing!
 
 # Filter bad data
 FloatParse(x) =
@@ -12,8 +12,8 @@ catch
     return false
 end
 
-function load(filepath::String, order::Int; col, delim=',')
-    df = File(filepath, delim=delim) |> DataFrame
+function loadAR(filepath::String, order::Int; col, delim=',')
+    df = CSV.File(filepath, delim=delim) |> DataFrame
     x = []
     df = DataFrame(value=df[col])
     #dropmissing!(df)
@@ -50,7 +50,7 @@ function generate_coefficients(order::Int)
     return true_a
 end
 
-function generate(num::Int, order::Int, scale::Real; noise_variance=1)
+function generateAR(num::Int, order::Int, scale::Real; noise_variance=1)
     coefs = generate_coefficients(order)
     inits = scale*randn(order)
     data = Vector{Vector{Float64}}(undef, num+3*order)
@@ -77,19 +77,19 @@ function generate_sin(num::Int, noise_variance=1/5)
     return coefs, data
 end
 
-function dump(data, coefs; folder=".")
+function writeAR(coefs, data; folder=".")
     data = push!(data, coefs)
     df = DataFrame(hcat(data...)')
     order = length(data[1])
     CSV.write(folder*"/AR($order).csv", df)
 end
 
-function read_dump(filename)
-    df = File(filename) |> DataFrame
+function readAR(filename)
+    df = CSV.File(filename) |> DataFrame
     matrix = convert(Matrix, df)
     matrix = [matrix[i, :] for i in 1:size(matrix, 1)]
     coefs = matrix[end]
-    data = matrix[1:end]
+    data = matrix[1:end-1]
     return coefs, data
 end
 

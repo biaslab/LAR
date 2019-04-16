@@ -8,7 +8,7 @@ include("../AR-node/vmp_rules.jl")
 include( "../AR-node/observationAR.jl")
 include("../helpers/functions.jl")
 include("../data/ARdata.jl")
-import Main.ARdata: use_data, generate_data, generate_sin
+import Main.ARdata: loadAR, generateAR, writeAR, readAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
@@ -20,7 +20,7 @@ x = []
 # AR data
 a_w = 1.0/tiny^2; b_w = 1.0/tiny
 process_noise = b_w/a_w
-#x = use_data("data/temperature.csv", ARorder)#generate_data(100, ARorder, 1, noise_variance=process_noise)
+#x = loadAR("data/temperature.csv", ARorder)#generate_data(100, ARorder, 1, noise_variance=process_noise)
 coefs, x = generate_sin(100, 2, tiny)
 
 # Observations
