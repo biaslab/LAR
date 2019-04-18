@@ -38,10 +38,10 @@ function generate_coefficients(order::Int)
     # Keep generating coefficients until we come across a set of coefficients
     # that correspond to stable poles
     while !stable
-        true_a = randn(order) .- .5
+        true_a = randn(order)
         coefs =  append!([1.0], -true_a)
-        reverse!(coefs)
-        if false in ([abs(root) for root in roots(coefs)] .< 1)
+        #reverse!(coefs)
+        if false in ([abs(root) for root in roots(coefs)] .> 1)
             continue
         else
             stable = true
