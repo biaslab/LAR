@@ -1,9 +1,11 @@
 mse(x, y) = sum((x - y).^2)/length(y)
 
-function wmse(x, y)
-    T = length(y)
+logPDF(mx, x, vx) = log(1 / sqrt(2 * pi * vx)) + -((mx - x)^2) / 2 * vx
+
+function wmse(mx, x, vx)
+    T = length(x)
     a = [exp(k-T) for k in 1:T]
-    a'*((x - y).^2)
+    a'*((mx - x).^2 ./ vx)
 end
 
 function addNoise(clean; noise_variance)
