@@ -50,17 +50,38 @@ function generate_coefficients(order::Int)
     return true_a
 end
 
-function generateAR(num::Int, order::Int, scale::Real; noise_variance=1)
+function generateAR(num::Int, order::Int; nvar=1)
     coefs = generate_coefficients(order)
-    inits = scale*randn(order)
+    inits = randn(order)
     data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
     for i in 2:num+3*order
         data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
-        data[i][1] += sqrt(noise_variance)*randn()
+        data[i][1] += sqrt(nvar)*randn()
     end
     data = data[1+3*order:end]
     return coefs, data
+end
+
+function generateHAR(num::Int, order::Int; levels=2, nvars=[])
+    # generate first layer
+    if isempty(nvars)
+        nvars = ones(levels)
+    elseif length(nvars) != levels
+        throw(DimensionMismatch("size of variances is not equal to number of levels"))
+    end
+    θ1, θ2 = generateAR(num, order; nvar=nvars[1])
+    data = [θ1, θ2]
+    for level in 2:levels
+        states = Vector{Vector{Float64}}(undef, num)
+        states[1] = randn(order)
+        for i in 2:num
+            states[i] = insert!(states[i-1][1:end-1], 1, data[level][i]'states[i-1])
+            states[i][1] += sqrt(nvars[2])*randn()
+        end
+        push!(data, states)
+    end
+    return data
 end
 
 function generate_sin(num::Int, noise_variance=1/5)
