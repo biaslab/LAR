@@ -1,6 +1,9 @@
-# joint estimations of x and a
+# Known process noise (no measurement noise) KP
+# estimations of a
 
 using ProgressMeter
+using Revise
+using Random
 using ForneyLab
 include( "../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
@@ -12,19 +15,24 @@ import Main.ARdata: loadAR, generateAR, writeAR, readAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
+Random.seed!(42)
+
 # order of AR model
 ARorder = 2
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # AR data
-a_w = 1.0/tiny^2; b_w = 1.0/tiny
-process_noise = b_w/a_w
-#x = loadAR("data/temperature.csv", ARorder)#generate_data(100, ARorder, 1, noise_variance=process_noise)
-coefs, x = generate_sin(100, 2, tiny)
+a_w = 1.0; b_w = 1.0
+v_x = b_w/a_w # process noise variance
+coefs, dataAR = generateAR(1000, ARorder, nvar=v_x)
+
+# Remove t-1 samples from x
+x = dataAR
 
 # Observations
-y = [xi[1] for xi in x[ARorder:end]]
+y = [x[1] for x in dataAR]
+
 
 g = FactorGraph()
 
@@ -52,7 +60,7 @@ placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
 placeholder(m_y_t, :m_y_t)
 placeholder(w_y_t, :w_y_t)
 
-ForneyLab.draw(g)
+#ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, x_t, ids=[:A :X_t])
@@ -69,7 +77,7 @@ display(Meta.parse(algoF))
 # Define values for prior statistics
 m_a_0 = 0.0*rand(ARorder)
 w_a_0 = (tiny*diagAR(ARorder))
-m_x_prev_0 = x[ARorder - 1]
+m_x_prev_0 = x[1]
 w_x_prev_0 = (huge*diagAR(ARorder))
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
@@ -92,7 +100,7 @@ precisions = []
 F = []
 
 p = Progress(length(y), 1, "Observed ")
-for t in 1:length(y)
+for t in 2:length(y)
     update!(p, t)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
@@ -117,7 +125,7 @@ for t in 1:length(y)
         w_a_t_min = w_a[t]
         m_x_t_prev_min = m_x_prev[t]
         w_x_t_prev_min = w_x_prev[t]
-        push!(F, log(abs(Complex(freeEnergy(data, marginals)))))
+        push!(F, freeEnergy(data, marginals))
 
     end
 end

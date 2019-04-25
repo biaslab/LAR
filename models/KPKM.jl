@@ -1,7 +1,9 @@
-# joint estimations of x and a with known process and measurement noises
+# Known process and measurement noises (KPMN)
+# joint estimations of x and a
 
 using ProgressMeter
 using Revise
+using Random
 using ForneyLab
 include( "../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
@@ -12,19 +14,23 @@ import Main.ARdata: loadAR, generateAR, writeAR, readAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
-# order of AR model
-ARorder = 10
+Random.seed!(42)
+
+# Define the order and data
+ARorder = 1
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
-x = []
 
 # AR data
-a_w = 1.0; b_w = 2.0
-process_noise = b_w/a_w
-coefs, x = generateAR(1000, ARorder, 1, noise_variance=2.0)
+a_w, b_w = 1, 1
+v_x = b_w/a_w # process noise variance
+coefs, data = generateAR(100, ARorder, nvar=v_x)
 
+# Remove t-1 samples from x
+x = [x[1] for x in data[2:end]]
+
+v_y = 2 # measurement noise variance
 # Observations
-measurement_noise = 1.0
-y = [xi[1] + sqrt(measurement_noise)*randn() for xi in x[ARorder:end]]
+y = [x + sqrt(v_y)*randn() for x in x];
 
 g = FactorGraph()
 
@@ -40,7 +46,7 @@ g = FactorGraph()
 @RV w ~ Gamma(a_w, b_w)
 @RV x_t = AR(a, x_t_prev, w)
 c = zeros(ARorder); c[1] = 1.0
-@RV y_t ~ GaussianMeanPrecision(m_y_t, measurement_noise^-1)
+@RV y_t ~ GaussianMeanPrecision(m_y_t, v_y^-1)
 DotProduct(y_t, c, x_t)
 
 # Placeholders for prior

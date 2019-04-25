@@ -1,9 +1,10 @@
-# Unknown process and measurement noises
+# Unknown process and known measurement noises (UPKM)
 # joint estimations of x, a and w (process noise)
 
 using ProgressMeter
 using Revise
 using ForneyLab
+using Random
 include( "../AR-node/autoregression.jl")
 include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
@@ -14,19 +15,22 @@ import Main.ARdata: loadAR, generateAR, writeAR, readAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
-# order of AR model
+Random.seed!(42)
+
+# Define the order and data
 ARorder = 2
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
-x = []
 
 # AR data
-a_w = 1.0; b_w = 1.0
-process_noise = a_w/b_w
-coefs, x = generateAR(1000, ARorder, 1, noise_variance=process_noise)
+v_x = 0.1 # process noise variance
+coefs, data = generateAR(1000, ARorder, nvar=v_x)
 
+# Remove t-1 sample from x
+x = [x[1] for x in data]
+
+v_y = 1 # measurement noise variance
 # Observations
-measurement_noise = 1.0
-y = [xi[1] + sqrt(measurement_noise)*randn() for xi in x[ARorder:end]]
+y = [x + sqrt(v_y)*randn() for x in x];
 
 g = FactorGraph()
 
@@ -75,9 +79,9 @@ eval(Meta.parse(algoF))
 m_a_0 = zeros(ARorder)
 w_a_0 = diagAR(ARorder)
 m_x_prev_0 = zeros(ARorder)
-w_x_prev_0 = (0.1*diagAR(ARorder))
-a_w_0 = 3
-b_w_0 = 1
+w_x_prev_0 = diagAR(ARorder)
+a_w_0 = 0.0001
+b_w_0 = 0.0001
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
@@ -109,7 +113,7 @@ for t in 1:length(y)
 
     for i = 1:n_its
         data = Dict(:m_y_t => y[t],
-                    :w_y_t => measurement_noise^-1,
+                    :w_y_t => v_y^-1,
                     :m_a_t => m_a_t_min,
                     :w_a_t => w_a_t_min,
                     :m_x_t_prev => m_x_t_prev_min,
@@ -140,28 +144,28 @@ println("Estimated ", mean(marginals[:a]))
 println("True ", coefs)
 
 println("Process noise variance\n=========")
-println("Estimated ", mean(marginals[:w]))
-println("True ", process_noise)
+println("Estimated ", mean(marginals[:w])^-1)
+println("True ", v_x)
 
 # Plotting
 using Plots
-from = 1
-upto = 40 # limit for building a graph
+from = 500
+upto = 650 # limit for building a graph
 scale = 1.0 # scale for the variance
-v_x = [v_x[1]^-1 for v_x in w_x_prev[1:end]] # variances of estimated state
-noise = [y[1] for y in y[from:end]] # noisy observations
-estimated = [x[1] for x in m_x_prev[from:end]]
-real = [x[1] for x in x[ARorder:end]]
-scatter(noise[from:upto], label="noisy observations",
+v_x = [v_x[1]^-1 for v_x in w_x_prev[from:upto]]# variances of estimated state
+noise = [y[1] for y in y[from:upto]] # noisy observations
+estimated = [x[1] for x in m_x_prev[from:upto]]
+real = [x[1] for x in x[from:upto]]
+scatter(noise, label="noisy observations",
         markershape = :xcross, markeralpha = 0.6,
         markersize = 2)
-plot!([estimated[from:upto], estimated[from:upto]], fillrange=[estimated[from:upto] -
-      scale .* sqrt.(v_x[from:upto]), estimated[from:upto] +
-      scale .* sqrt.(v_x[from:upto])],
+plot!([estimated, estimated], fillrange=[estimated -
+      scale .* sqrt.(v_x), estimated +
+      scale .* sqrt.(v_x)],
       linestyle=:dash,linewidth = 2,
       color=:black,
       fillalpha = 0.2,
       fillcolor = :black,
       label=["inferred", "inferred"])
-plot!(real[from:upto], color = :magenta, linewidth = 1.0, label="real state")
+plot!(real, color = :magenta, linewidth = 1.0, label="real state")
 pAR = plot!(title="AR($ARorder)", legend=false)
