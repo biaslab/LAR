@@ -1,5 +1,5 @@
 .DS_Store
 .gif
 gifs/
-notebooks/.ipynb_checkpoints
+demo/.ipynb_checkpoints
 models/iterative_learning.jl

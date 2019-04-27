@@ -13,7 +13,7 @@ include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
 include("../helpers/functions.jl")
 include("../data/ARdata.jl")
-import Main.ARdata: generateHAR
+import Main.ARdata: generateHAR, generateAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
@@ -21,13 +21,14 @@ Random.seed!(42)
 
 ARorder = 1
 
-v_θ1 = 0.1
+v_θ1 = 0.5
 v_x = 0.5
 
 dataHAR = generateHAR(1000, ARorder, levels=2, nvars=[v_θ1, v_x])
 x = [x[1] for x in dataHAR[3]]
+
 # Observations
-v_y = 1.0
+v_y = 2.0
 y = [xi[1] + sqrt(v_y)*randn() for xi in dataHAR[3]]
 
 # Creating the graph
@@ -221,7 +222,8 @@ v_xt = [v_x[1]^-1 for v_x in w_x]
 m_θ1t = [m_θ1[1] for m_θ1 in m_θ1]
 v_θ1t = [v_x[1]^-1 for v_x in w_θ1]
 
-from = 1; upto = 50;
+from = 1
+upto = 50
 scatter(y, markershape = :xcross, markeralpha = 0.6,
         markersize = 2, xlabel="time t", ylabel="value", label="observations", xlims=(from, upto))
 plot!(x, color=:magenta, label=L"real \quad x_t", title="AR($ARorder) process")
@@ -267,7 +269,7 @@ println("Estimated ", mean(marginals[:w_θ1])^-1)
 println("True ", v_θ1)
 
 ## Plotting inferred coefs (1D)
-bound = 1
+bound = 2
 scatter([dataHAR[1]], [0], xlims=(dataHAR[1][1] - bound, dataHAR[1][1] + bound), markershape = :diamond,
          markersize = 5, markeralpha = 0.6, markercolor = :blue, label="true", title=L"\theta^{(2)}")
 plot!(Distributions.Normal(mean(marginals[:θ2])[1], cov(marginals[:θ2])[1]), lw=1, label="posterior")

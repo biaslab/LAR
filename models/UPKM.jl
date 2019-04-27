@@ -135,8 +135,8 @@ for t in 1:length(y)
         w_x_t_prev_min = w_x_prev[t]
         a_w_t_min = a_w[t]
         b_w_t_min = b_w[t]
-        push!(F, abs(log(Complex((freeEnergy(data, marginals))))))
     end
+    push!(F, freeEnergy(data, marginals))
 end
 
 println("Coefs\n=========")
