@@ -9,16 +9,14 @@ import LinearAlgebra: Symmetric, tr
 
 order, c, S = Nothing, Nothing, Nothing
 
-diagAR(dim) = Matrix{Float64}(I, dim, dim)
-
 function ARnoiseMatrix(dim, variance)
-    matrix = tiny*diagAR(dim)
+    matrix = tiny*diageye(dim)
     matrix[1] = variance
     return matrix
 end
 
 function shift(dim)
-    S = diagAR(dim)
+    S = diageye(dim)
     for i in dim:-1:2
            S[i,:] = S[i-1, :]
     end
@@ -48,7 +46,7 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
     order == Nothing ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
-    W = Symmetric(unsafeMean(marg_w)*diagAR(order))
+    W = Symmetric(unsafeMean(marg_w)*diageye(order))
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 

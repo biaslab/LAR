@@ -8,7 +8,7 @@ using ForneyLab
 
 # define order and generate data
 ARorder = UInt16(10)
-diagAR(dim) = Matrix{Float64}(I, dim, dim)
+diageye(dim) = Matrix{Float64}(I, dim, dim)
 coefs, x = generate_data(UInt64(10000), ARorder, 100)
 
 # splitting the data
@@ -30,8 +30,8 @@ n = length(y); n = 2
 # Building the model
 g = FactorGraph()
 
-@RV a ~ GaussianMeanPrecision(0.0*rand(ARorder), (10.0*diagAR(ARorder)))
-@RV x_t_prev ~ GaussianMeanPrecision(0.5*rand(ARorder), (10.0*diagAR(ARorder)))
+@RV a ~ GaussianMeanPrecision(0.0*rand(ARorder), (10.0*diageye(ARorder)))
+@RV x_t_prev ~ GaussianMeanPrecision(0.5*rand(ARorder), (10.0*diageye(ARorder)))
 #@RV x_t ~ GaussianMeanPrecision(m_x_t, w_x_t)
 #@RV x_t
 @RV w ~ Gamma(2, 5)

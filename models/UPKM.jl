@@ -19,7 +19,7 @@ Random.seed!(42)
 
 # Define the order and data
 ARorder = 2
-diagAR(dim) = Matrix{Float64}(I, dim, dim)
+diageye(dim) = Matrix{Float64}(I, dim, dim)
 
 # AR data
 v_x = 0.1 # process noise variance
@@ -77,9 +77,9 @@ eval(Meta.parse(algoF))
 
 # Define values for prior statistics
 m_a_0 = zeros(ARorder)
-w_a_0 = diagAR(ARorder)
+w_a_0 = diageye(ARorder)
 m_x_prev_0 = zeros(ARorder)
-w_x_prev_0 = diagAR(ARorder)
+w_x_prev_0 = diageye(ARorder)
 a_w_0 = 0.0001
 b_w_0 = 0.0001
 
