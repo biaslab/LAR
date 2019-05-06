@@ -18,11 +18,11 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 function fitVMP(ind, len=999)
     m_x_prev_0 = ind.genes[1] .+ zeros(ARorder)
-    w_x_prev_0 = (ind.genes[2]*diageye(ARorder))
+    w_x_prev_0 = (ind.genes[2]*diagAR(ARorder))
     a_w_0 = ind.genes[3]
     b_w_0 = ind.genes[4]
     m_a_0 = ind.genes[5] .+ zeros(ARorder)
-    w_a_0 = (ind.genes[6]*diageye(ARorder))
+    w_a_0 = (ind.genes[6]*diagAR(ARorder))
 
     m_x_prev = Vector{Vector{Float64}}(undef, len)
     w_x_prev = Vector{Array{Float64, 2}}(undef, len)
@@ -90,7 +90,7 @@ end
 
 # order of AR model
 ARorder = 1
-diageye(dim) = Matrix{Float64}(I, dim, dim)
+diagAR(dim) = Matrix{Float64}(I, dim, dim)
 
 # synthesize AR data
 coefs, x = generate_data(1000, ARorder, 1.0, noise_variance=1.0)

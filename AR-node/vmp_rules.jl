@@ -9,14 +9,16 @@ import LinearAlgebra: Symmetric, tr
 
 order, c, S = Nothing, Nothing, Nothing
 
-function ARnoiseMatrix(dim, variance)
-    matrix = tiny*diageye(dim)
-    matrix[1] = variance
-    return matrix
+diagAR(dim) = Matrix{Float64}(I, dim, dim)
+
+function wMatrix(w, order)
+    mW = huge*diagAR(order)
+    mW[1, 1] = w
+    return mW
 end
 
 function shift(dim)
-    S = diageye(dim)
+    S = diagAR(dim)
     for i in dim:-1:2
            S[i,:] = S[i-1, :]
     end
@@ -46,7 +48,7 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
     order == Nothing ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
-    W = Symmetric(unsafeMean(marg_w)*diageye(order))
+    W = Symmetric(wMatrixunsafeMean(marg_w), order))
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
@@ -57,10 +59,9 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
     ma = unsafeMean(marg_a)
     order == Nothing ? defineOrder(length(ma)) : order
     mA = S+c*ma'
-    D = unsafeCov(marg_a)+mA'*mA
     mw = unsafeMean(marg_w)
-    xi = mw*mA'*unsafeMean(marg_y)
-    W = Symmetric(mw*D)
+    W = Symmetric(unsafeCov(marg_a)*mw+mA'*wMatrixmw, order)*mA)
+    xi = mA'*wMatrixmw, order)*unsafeMean(marg_y)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
@@ -71,10 +72,9 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
     my = unsafeMean(marg_y)
     order == Nothing ? defineOrder(length(my)) : order
     mx = unsafeMean(marg_x)
-    D = unsafeCov(marg_x)+mx*mx'
     mw = unsafeMean(marg_w)
-    xi = mw*(mx*c'*my)
-    W = Symmetric(mw*D)
+    W = Symmetric(unsafeCov(marg_x)*mw+mx*mw*mx')
+    xi = (mx*c'*wMatrixmw, order)*my)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
@@ -83,11 +83,9 @@ function ruleVariationalARIn3PPPV(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: Nothing)
 
-    mA = S+c*unsafeMean(marg_a)'
     ma = unsafeMean(marg_a)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = tr(unsafeCov(marg_y) + my*my' - 2*my*mx'*mA' + mx*mx'*unsafeCov(marg_a) + (S'*S+ma*ma')*(unsafeCov(marg_x)+mx*mx'))
-    order == Nothing ? defineOrder(length(my)) : order
-    Message(Gamma, a=order/2 + 1, b= B/2)
+    B = unsafeCov(marg_y)[1, 1] + my[1]*my'[1] - 2*my[1]*ma'*mx + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
+    Message(Gamma, a=3/2, b= B/2)
 end

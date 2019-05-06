@@ -20,7 +20,7 @@ function ruleVBobservationARIn2(msg_out::ProbabilityDistribution{V},
     d = length(c)
     xi = c * msg_w.params[:m]*msg_out.params[:m]
     w = c * msg_w.params[:m] * c'
-    w += tiny*diageye(size(w)[1]) # Ensure w is invertible
+    w += tiny*diagAR(size(w)[1]) # Ensure w is invertible
 
     return Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=w)
 end

@@ -17,13 +17,13 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 Random.seed!(42)
 # order of AR model
-ARorder = 1
-diageye(dim) = Matrix{Float64}(I, dim, dim)
+ARorder = 5
+diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # AR data
 v_x = 0.1 # process noise variance
-coefs, dataAR = generateAR(1000, ARorder, nvar=v_x)
+coefs, dataAR = generateAR(10000, ARorder, nvar=v_x)
 
 # Remove t-1 samples from x
 x = [x[1] for x in dataAR]
@@ -76,9 +76,9 @@ eval(Meta.parse(algoF))
 a_w_0 = 0.0001
 b_w_0 = 0.0001
 m_a_0 = zeros(ARorder)
-w_a_0 = diageye(ARorder)
+w_a_0 = diagAR(ARorder)
 m_x_prev_0 = zeros(ARorder)
-w_x_prev_0 = diageye(ARorder)
+w_x_prev_0 = diagAR(ARorder)
 
 m_x = Vector{Vector{Float64}}(undef, length(y))
 w_x = Vector{Array{Float64, 2}}(undef, length(y))

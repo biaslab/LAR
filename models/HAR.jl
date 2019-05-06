@@ -110,19 +110,19 @@ b_x = Vector{Float64}(undef, length(y))
 
 # Define values for upper layer
 m_θ2_0 = zeros(ARorder)
-w_θ2_0 = diageye(ARorder)
+w_θ2_0 = diagAR(ARorder)
 a_θ1_0 = 0.0001
 b_θ1_0 = 0.0001
 m_θ1_prev_0 = zeros(ARorder)
-w_θ1_prev_0 = 0.1*diageye(ARorder)
+w_θ1_prev_0 = 0.1*diagAR(ARorder)
 m_θ1_t_0 = zeros(ARorder)
-w_θ1_t_0 = 0.1*diageye(ARorder)
+w_θ1_t_0 = 0.1*diagAR(ARorder)
 
 # Define values for bottom layer
 a_x_0 = 0.0001
 b_x_0 = 0.0001
 m_x_t_prev_0 = zeros(ARorder)
-w_x_t_prev_0 = diageye(ARorder)
+w_x_t_prev_0 = diagAR(ARorder)
 
 # Priors upper layer
 m_θ2_min = m_θ2_0

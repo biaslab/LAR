@@ -19,7 +19,7 @@ Random.seed!(42)
 
 # order of AR model
 ARorder = 2
-diageye(dim) = Matrix{Float64}(I, dim, dim)
+diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # AR data
@@ -76,9 +76,9 @@ display(Meta.parse(algoF))
 
 # Define values for prior statistics
 m_a_0 = 0.0*rand(ARorder)
-w_a_0 = (tiny*diageye(ARorder))
+w_a_0 = (tiny*diagAR(ARorder))
 m_x_prev_0 = x[1]
-w_x_prev_0 = (huge*diageye(ARorder))
+w_x_prev_0 = (huge*diagAR(ARorder))
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
