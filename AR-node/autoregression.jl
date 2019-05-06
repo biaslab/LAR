@@ -54,11 +54,14 @@ function averageEnergy(::Type{Autoregression},
                        marg_a::ProbabilityDistribution{Multivariate},
                        marg_x::ProbabilityDistribution{Multivariate},
                        marg_w::ProbabilityDistribution{Univariate})
-    dim = length(mean(marg_y))
+    order = length(mean(marg_y))
     ma = unsafeMean(marg_a)
+    covA = unsafeCov(marg_a)
+    mA = S+c*ma'
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = unsafeCov(marg_y)[1, 1] + my[1]*my'[1] - 2*my[1]*ma'*mx + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
-
-    -0.5*(polygamma(0, marg_w.params[:a]) - log(marg_w.params[:b]) + (1-dim)*log(tiny) - 0.5*dim*log(2*pi)) + 0.5*mean(marg_w)*B
+    mw = unsafeMean(marg_w)
+    mW = wMatrix(mw, order)
+    B = my'*mW*my - (mA*mx)'*mW*my - my'*mW*mA*mx + tr((mA*mA' + covA + (covA + ma*ma')*mx*mx')*mW + mW*unsafeCov(marg_y))
+    -0.5*(polygamma(0, marg_w.params[:a]) - log(marg_w.params[:b]) + (1-order)*log(tiny) - order*log(2*pi)) + B
 end

@@ -3,7 +3,8 @@ export ruleVariationalAROutVPPP,
        ruleVariationalARIn2PPVP,
        ruleVariationalARIn3PPPV,
        uvector,
-       shift
+       shift,
+       wMatrix
 
 import LinearAlgebra: Symmetric, tr
 
@@ -45,10 +46,11 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
                                   marg_w :: ProbabilityDistribution{Univariate})
 
     ma = unsafeMean(marg_a)
-    order == Nothing ? defineOrder(length(ma)) : order
+    # FIXME: redifining order 
+    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
-    W = Symmetric(wMatrixunsafeMean(marg_w), order))
+    W = Symmetric(wMatrix(unsafeMean(marg_w), order))
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
@@ -57,11 +59,11 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: ProbabilityDistribution{Univariate})
     ma = unsafeMean(marg_a)
-    order == Nothing ? defineOrder(length(ma)) : order
+    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ? defineOrder(length(ma)) : order
     mA = S+c*ma'
     mw = unsafeMean(marg_w)
-    W = Symmetric(unsafeCov(marg_a)*mw+mA'*wMatrixmw, order)*mA)
-    xi = mA'*wMatrixmw, order)*unsafeMean(marg_y)
+    W = Symmetric(unsafeCov(marg_a)*mw+mA'*wMatrix(mw, order)*mA)
+    xi = mA'*wMatrix(mw, order)*unsafeMean(marg_y)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
@@ -70,11 +72,11 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_a :: Nothing,
                                   marg_w :: ProbabilityDistribution{Univariate})
     my = unsafeMean(marg_y)
-    order == Nothing ? defineOrder(length(my)) : order
+    order == Nothing ? defineOrder(length(my)) : order != length(my) ? defineOrder(length(my)) : order
     mx = unsafeMean(marg_x)
     mw = unsafeMean(marg_w)
     W = Symmetric(unsafeCov(marg_x)*mw+mx*mw*mx')
-    xi = (mx*c'*wMatrixmw, order)*my)
+    xi = (mx*c'*wMatrix(mw, order)*my)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 

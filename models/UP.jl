@@ -17,7 +17,7 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 Random.seed!(42)
 # order of AR model
-ARorder = 5
+ARorder = 1
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
