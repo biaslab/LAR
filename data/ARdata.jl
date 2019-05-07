@@ -50,8 +50,12 @@ function generate_coefficients(order::Int)
     return true_a
 end
 
-function generateAR(num::Int, order::Int; nvar=1)
-    coefs = generate_coefficients(order)
+function generateAR(num::Int, order::Int; nvar=1, stat=true)
+    if stat
+        coefs = generate_coefficients(order)
+    else
+        coefs = randn(order)
+    end
     inits = randn(order)
     data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
@@ -63,14 +67,14 @@ function generateAR(num::Int, order::Int; nvar=1)
     return coefs, data
 end
 
-function generateHAR(num::Int, order::Int; levels=2, nvars=[])
+function generateHAR(num::Int, order::Int; levels=2, nvars=[], stat=true)
     # generate first layer
     if isempty(nvars)
         nvars = ones(levels)
     elseif length(nvars) != levels
         throw(DimensionMismatch("size of variances is not equal to number of levels"))
     end
-    θ1, θ2 = generateAR(num, order; nvar=nvars[1])
+    θ1, θ2 = generateAR(num, order; nvar=nvars[1], stat=stat)
     data = [θ1, θ2]
     for level in 2:levels
         states = Vector{Vector{Float64}}(undef, num)
