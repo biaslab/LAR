@@ -18,17 +18,17 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 Random.seed!(42)
 
 # Define the order and data
-ARorder = 2
+ARorder = 3
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 
 # AR data
-v_x = 0.1 # process noise variance
+v_x = 1.0 # process noise variance
 coefs, data = generateAR(1000, ARorder, nvar=v_x)
 
 # Remove t-1 sample from x
 x = [x[1] for x in data]
 
-v_y = 1 # measurement noise variance
+v_y = 2.0 # measurement noise variance
 # Observations
 y = [x + sqrt(v_y)*randn() for x in x];
 
@@ -65,7 +65,7 @@ placeholder(w_y_t, :w_y_t)
 #ForneyLab.draw(g)
 
 # Specify recognition factorization
-q = RecognitionFactorization(a, x_t, w, ids=[:A :X_t :W])
+q = RecognitionFactorization(a, x_t, x_t_prev, w, ids=[:A :X_t :X_t_prev :W])
 
 # Generate the variational update algorithms for each recognition factor
 algo = variationalAlgorithm(q)
@@ -98,10 +98,12 @@ a_w_t_min = a_w_0
 b_w_t_min = b_w_0
 
 marginals = Dict()
+data = Dict()
 n_its = 5
 
 # Storage for predictions
 F = []
+F_iters = []
 
 p = Progress(length(y), 1, "Observed ")
 for t in 1:length(y)
@@ -109,8 +111,8 @@ for t in 1:length(y)
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
-    global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min, a_w_t_min, b_w_t_min
-
+    global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min, a_w_t_min, b_w_t_min, data
+    f = Vector{Float64}(undef, n_its)
     for i = 1:n_its
         data = Dict(:m_y_t => y[t],
                     :w_y_t => v_y^-1,
@@ -135,8 +137,10 @@ for t in 1:length(y)
         w_x_t_prev_min = w_x_prev[t]
         a_w_t_min = a_w[t]
         b_w_t_min = b_w[t]
+        #f[i] = freeEnergy(data, marginals)
     end
-    push!(F, freeEnergy(data, marginals))
+    #push!(F_iters, f)
+    #push!(F, freeEnergy(data, marginals))
 end
 
 println("Coefs\n=========")
@@ -149,8 +153,8 @@ println("True ", v_x)
 
 # Plotting
 using Plots
-from = 500
-upto = 650 # limit for building a graph
+from = 100
+upto = 200 # limit for building a graph
 scale = 1.0 # scale for the variance
 v_x = [v_x[1]^-1 for v_x in w_x_prev[from:upto]]# variances of estimated state
 noise = [y[1] for y in y[from:upto]] # noisy observations

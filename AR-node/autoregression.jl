@@ -62,6 +62,8 @@ function averageEnergy(::Type{Autoregression},
     mx = unsafeMean(marg_x)
     mw = unsafeMean(marg_w)
     mW = wMatrix(mw, order)
-    B = my'*mW*my - (mA*mx)'*mW*my - my'*mW*mA*mx + tr((mA*mA' + covA + (covA + ma*ma')*mx*mx')*mW + mW*unsafeCov(marg_y))
-    -0.5*(polygamma(0, marg_w.params[:a]) - log(marg_w.params[:b]) + (1-order)*log(tiny) - order*log(2*pi)) + B
+    Vx = unsafeCov(marg_x)
+    B1 = -tr(mW*unsafeCov(marg_y)) - my'*mW*my + (mA*mx)'*mW*my + my'*mW*mA*mx - tr(S'*mW*S*Vx)
+    B2 = -mw*ma'*Vx*ma - tr(S'*mW*S*mx*mx') - mw*mx'*unsafeCov(marg_a)*mx - mw*ma'*mx*mx'*ma
+    -0.5*(polygamma(0, marg_w.params[:a]) - log(marg_w.params[:b]) - (1-order)*log(tiny) - 0.5*order*log(2*pi)) + (B1 + B2)
 end

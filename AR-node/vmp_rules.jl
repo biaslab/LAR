@@ -46,8 +46,8 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
                                   marg_w :: ProbabilityDistribution{Univariate})
 
     ma = unsafeMean(marg_a)
-    # FIXME: redifining order 
-    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ? defineOrder(length(ma)) : order
+    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ?
+                       defineOrder(length(ma)) : order
     mA = S+c*ma'
     m = mA*unsafeMean(marg_x)
     W = Symmetric(wMatrix(unsafeMean(marg_w), order))
@@ -59,7 +59,8 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: ProbabilityDistribution{Univariate})
     ma = unsafeMean(marg_a)
-    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ? defineOrder(length(ma)) : order
+    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ?
+                       defineOrder(length(ma)) : order
     mA = S+c*ma'
     mw = unsafeMean(marg_w)
     W = Symmetric(unsafeCov(marg_a)*mw+mA'*wMatrix(mw, order)*mA)
@@ -71,8 +72,10 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_x :: ProbabilityDistribution{Multivariate},
                                   marg_a :: Nothing,
                                   marg_w :: ProbabilityDistribution{Univariate})
+    #display(marg_y.params[:w])
     my = unsafeMean(marg_y)
-    order == Nothing ? defineOrder(length(my)) : order != length(my) ? defineOrder(length(my)) : order
+    order == Nothing ? defineOrder(length(my)) : order != length(my) ?
+                       defineOrder(length(my)) : order
     mx = unsafeMean(marg_x)
     mw = unsafeMean(marg_w)
     W = Symmetric(unsafeCov(marg_x)*mw+mx*mw*mx')
@@ -85,9 +88,11 @@ function ruleVariationalARIn3PPPV(marg_y :: ProbabilityDistribution{Multivariate
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: Nothing)
 
+    #display(marg_a.params[:w])
     ma = unsafeMean(marg_a)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = unsafeCov(marg_y)[1, 1] + my[1]*my'[1] - 2*my[1]*ma'*mx + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
+    B = unsafeCov(marg_y)[1, 1] + my[1]*my'[1] - 2*my[1]*ma'*mx
+        + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
     Message(Gamma, a=3/2, b= B/2)
 end
