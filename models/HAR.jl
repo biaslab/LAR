@@ -19,16 +19,16 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 Random.seed!(42)
 
-ARorder = 1
+ARorder = 2
 
-v_θ1 = 0.5
-v_x = 0.5
+v_θ1 = 1.0
+v_x = 100
 
 dataHAR = generateHAR(1000, ARorder, levels=2, nvars=[v_θ1, v_x])
 x = [x[1] for x in dataHAR[3]]
 
 # Observations
-v_y = 2.0
+v_y = 200
 y = [xi[1] + sqrt(v_y)*randn() for xi in dataHAR[3]]
 
 # Creating the graph
@@ -111,12 +111,12 @@ b_x = Vector{Float64}(undef, length(y))
 # Define values for upper layer
 m_θ2_0 = zeros(ARorder)
 w_θ2_0 = diagAR(ARorder)
-a_θ1_0 = 0.0001
-b_θ1_0 = 0.0001
+a_θ1_0 = 0.000001
+b_θ1_0 = 0.000001
 m_θ1_prev_0 = zeros(ARorder)
-w_θ1_prev_0 = 0.1*diagAR(ARorder)
+w_θ1_prev_0 = tiny*diagAR(ARorder)
 m_θ1_t_0 = zeros(ARorder)
-w_θ1_t_0 = 0.1*diagAR(ARorder)
+w_θ1_t_0 = tiny*diagAR(ARorder)
 
 # Define values for bottom layer
 a_x_0 = 0.0001

@@ -15,15 +15,19 @@ import Main.ARdata: loadAR, generateAR, writeAR, readAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
-Random.seed!(42)
+Random.seed!(10)
 
 # Define the order and data
-ARorder = 3
+ARorder = 1
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 
 # AR data
 v_x = 1.0 # process noise variance
-coefs, data = generateAR(1000, ARorder, nvar=v_x)
+coefs, data = generateAR(1000, ARorder, nvar=v_x, stat=true)
+
+
+#coefs = zeros(ARorder)
+#data = loadAR("data/temperature.csv", col=:Temp, delim=",")
 
 # Remove t-1 sample from x
 x = [x[1] for x in data]
@@ -62,7 +66,7 @@ placeholder(b_w_t, :b_w_t)
 placeholder(m_y_t, :m_y_t)
 placeholder(w_y_t, :w_y_t)
 
-#ForneyLab.draw(g)
+ForneyLab.draw(g)
 
 # Specify recognition factorization
 q = RecognitionFactorization(a, x_t, x_t_prev, w, ids=[:A :X_t :X_t_prev :W])
@@ -80,8 +84,8 @@ m_a_0 = zeros(ARorder)
 w_a_0 = diagAR(ARorder)
 m_x_prev_0 = zeros(ARorder)
 w_x_prev_0 = diagAR(ARorder)
-a_w_0 = 0.0001
-b_w_0 = 0.0001
+a_w_0 = 0.001
+b_w_0 = 0.001
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
@@ -122,9 +126,11 @@ for t in 1:length(y)
                     :w_x_t_prev => w_x_t_prev_min,
                     :a_w_t => a_w_t_min,
                     :b_w_t => b_w_t_min)
+
         stepX_t!(data, marginals)
         stepA!(data, marginals)
         stepW!(data, marginals)
+        stepX_t_prev!(data, marginals)
         m_a[t] = unsafeMean(marginals[:a])
         w_a[t] = unsafePrecision(marginals[:a])
         m_x_prev[t] = unsafeMean(marginals[:x_t])
@@ -139,7 +145,7 @@ for t in 1:length(y)
         b_w_t_min = b_w[t]
         #f[i] = freeEnergy(data, marginals)
     end
-    #push!(F_iters, f)
+    push!(F_iters, f)
     #push!(F, freeEnergy(data, marginals))
 end
 
@@ -153,8 +159,8 @@ println("True ", v_x)
 
 # Plotting
 using Plots
-from = 100
-upto = 200 # limit for building a graph
+from = 500
+upto = 550 # limit for building a graph
 scale = 1.0 # scale for the variance
 v_x = [v_x[1]^-1 for v_x in w_x_prev[from:upto]]# variances of estimated state
 noise = [y[1] for y in y[from:upto]] # noisy observations

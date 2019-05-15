@@ -12,22 +12,19 @@ catch
     return false
 end
 
-function loadAR(filepath::String, order::Int; col, delim=',')
+function loadAR(filepath::String; col, delim=',')
     df = CSV.File(filepath, delim=delim) |> DataFrame
     x = []
     df = DataFrame(value=df[col])
-    #dropmissing!(df)
-    if typeof(df[1, 1]) == String
-        filter!(row -> FloatParse(row[:value]) == true, df)
-    end
     # Data
-    for i in range(1, stop=size(df, 1) - order)
-        if typeof(df[i, 1]) == String
-            xi = map(x->parse(Float64,x), df[i:order+i - 1, :value])
+    for i in range(1, stop=size(df, 1))
+        if typeof(df[i, 1]) == String && FloatParse(df[i, 1])
+            xi = parse(Float64, df[i, 1])
+            push!(x, xi)
         elseif typeof(df[i, 1]) == Float64
-            xi = map(x->convert(Float64,x), df[i:order+i - 1, :value])
+            xi = convert(Float64, df[i, 1])
+            push!(x, xi)
         end
-        push!(x, xi)
     end
     return x
 end

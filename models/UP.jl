@@ -25,6 +25,8 @@ x = []
 v_x = 0.1 # process noise variance
 coefs, dataAR = generateAR(10000, ARorder, nvar=v_x)
 
+dataAR = loadAR("data/temperature.csv", col=:Temp, delim=",")
+
 # Remove t-1 samples from x
 x = [x[1] for x in dataAR]
 
