@@ -10,7 +10,6 @@ include("../AR-node/rules_prototypes.jl")
 include("../AR-node/vmp_rules.jl")
 include( "../AR-node/observationAR.jl")
 include("../helpers/functions.jl")
-include("../data/ARdata.jl")
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 function buildGraphAR(ARorder)
@@ -47,7 +46,7 @@ function buildGraphAR(ARorder)
     return graph, q
 end
 
-function inferAR(r_factorization, observations; vmp_iter=5, priors::Dict=Dict(), r_stats=false)
+function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, priors::Dict=Dict(), r_stats=false)
 
     # Define values for prior statistics
     if length(priors) == 6
@@ -103,7 +102,7 @@ function inferAR(r_factorization, observations; vmp_iter=5, priors::Dict=Dict(),
         if @isdefined(F); f = Vector{Float64}(undef, vmp_iter) end
         for i = 1:vmp_iter
             data = Dict(:m_y_t => observations[t],
-                        :w_y_t => v_y^-1,
+                        :w_y_t => obs_noise_var^-1,
                         :m_a_t => m_a_t_min,
                         :w_a_t => w_a_t_min,
                         :m_x_t_prev => m_x_t_prev_min,
@@ -136,10 +135,10 @@ function inferAR(r_factorization, observations; vmp_iter=5, priors::Dict=Dict(),
 
     if r_stats
         return marginals, F_iter, F,
-               Dict("m_x"=>[x[1] for x in m_x_prev],
-                    "w_x"=>[x[1] for x in w_x_prev],
-                    "m_a"=>m_a, "w_a"=>w_a,
-                    "a"=>a_w, "b"=>b_w)
+               Dict(:m_x=>m_x_prev,
+                    :w_x=>w_x_prev,
+                    :m_a=>m_a, :w_a=>w_a,
+                    :a=>a_w, :b=>b_w)
     else
         return marginals
     end
