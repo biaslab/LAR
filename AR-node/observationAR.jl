@@ -1,5 +1,5 @@
 import ForneyLab: @composite, DotProduct, GaussianMeanPrecision, unsafeLogMean, unsafeMean, unsafeCov, VariateType
-export observationAR, ruleVBobservationARIn2, freeEnergy
+export observationAR, ruleVBobservationARIn2, freeEnergy, slug
 
 @composite observationAR (y, x, z) begin
     c = zeros(ARorder); c[1] = 1.0
@@ -25,6 +25,7 @@ function ruleVBobservationARIn2(msg_out::ProbabilityDistribution{V},
     return Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=w)
 end
 
+slug(::Type{Autoregression}) = "Nc"
 
 # Average energy functional
 function averageEnergy(::Type{observationAR}, marg_out::ProbabilityDistribution{Univariate, PointMass},
