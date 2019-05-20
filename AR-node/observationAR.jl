@@ -33,6 +33,5 @@ function averageEnergy(::Type{observationAR}, marg_out::ProbabilityDistribution{
     mx = unsafeMean(marg_mean)
     Vx = unsafeCov(marg_mean)
     order = length(mx)
-    - order/2*log(2*pi) + 0.5*unsafeLogMean(marg_prec)
-    + 0.5*unsafeMean(marg_prec)*(unsafeMean(marg_out) - 2*mx[1] - (Vx + mx*mx')[1])
+    - order/2*log(2*pi) + 0.5*unsafeLogMean(marg_prec) + 0.5*unsafeMean(marg_prec)*(unsafeMean(marg_out) - 2*mx[1] - (Vx + mx*mx')[1])
 end

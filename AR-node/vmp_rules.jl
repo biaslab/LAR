@@ -1,7 +1,7 @@
-export ruleVariationalAROutVPPP,
-       ruleVariationalARIn1PVPP,
-       ruleVariationalARIn2PPVP,
-       ruleVariationalARIn3PPPV,
+export ruleVariationalAROutNPPP,
+       ruleVariationalARIn1PNPP,
+       ruleVariationalARIn2PPNP,
+       ruleVariationalARIn3PPPN,
        uvector,
        shift,
        wMatrix
@@ -40,7 +40,7 @@ function defineOrder(dim)
     S = shift(order)
 end
 
-function ruleVariationalAROutVPPP(marg_y :: Nothing,
+function ruleVariationalAROutNPPP(marg_y :: Nothing,
                                   marg_x :: ProbabilityDistribution{Multivariate},
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: ProbabilityDistribution{Univariate})
@@ -53,7 +53,7 @@ function ruleVariationalAROutVPPP(marg_y :: Nothing,
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
-function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate},
+function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate},
                                   marg_x :: Nothing,
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: ProbabilityDistribution{Univariate})
@@ -68,11 +68,10 @@ function ruleVariationalARIn1PVPP(marg_y :: ProbabilityDistribution{Multivariate
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
-function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate},
+function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate},
                                   marg_x :: ProbabilityDistribution{Multivariate},
                                   marg_a :: Nothing,
                                   marg_w :: ProbabilityDistribution{Univariate})
-    #display(marg_y.params)
     my = unsafeMean(marg_y)
     order == Nothing ? defineOrder(length(my)) : order != length(my) ?
                        defineOrder(length(my)) : order
@@ -83,7 +82,7 @@ function ruleVariationalARIn2PPVP(marg_y :: ProbabilityDistribution{Multivariate
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
-function ruleVariationalARIn3PPPV(marg_y :: ProbabilityDistribution{Multivariate},
+function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate},
                                   marg_x :: ProbabilityDistribution{Multivariate},
                                   marg_a :: ProbabilityDistribution{Multivariate},
                                   marg_w :: Nothing)
@@ -92,6 +91,5 @@ function ruleVariationalARIn3PPPV(marg_y :: ProbabilityDistribution{Multivariate
     mx = unsafeMean(marg_x)
     B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*ma'*mx
         + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
-    #display(unsafeCov(marg_x)+mx*mx')
     Message(Gamma, a=3/2, b=B/2)
 end
