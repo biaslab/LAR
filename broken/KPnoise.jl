@@ -8,22 +8,23 @@ include("../AR-node/vmp_rules.jl")
 include( "../AR-node/observationAR.jl")
 include("../helpers/functions.jl")
 include("../data/ARdata.jl")
-import Main.ARdata: use_data, generate_data
+import Main.ARdata: use_data, generateAR
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 # order of AR model
-ARorder = 10
+ARorder = 1
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 x = []
 
 # AR data
-a_w = 1.0^2/tiny; b_w = 1.0/tiny
+a_w = 1; b_w = 1;
 process_noise = b_w/a_w
-coefs, x = generate_data(10000, ARorder, 1, noise_variance=process_noise)
+coefs, x = generateAR(1000, ARorder, nvar=1.0, stat=true)
 
 # Observations
-y = [xi[1] for xi in x[ARorder:end]]
+y = [xi[1] for xi in x]
+
 
 g = FactorGraph()
 
@@ -32,14 +33,16 @@ g = FactorGraph()
 @RV w_x_t_prev
 @RV m_a_t
 @RV w_a_t
-@RV m_x_t
-@RV w_x_t
+@RV m_y_t
+@RV w_y_t
 
 @RV a ~ GaussianMeanPrecision(m_a_t, w_a_t)
 @RV x_t_prev ~ GaussianMeanPrecision(m_x_t_prev, w_x_t_prev)
 @RV w ~ Gamma(a_w, b_w)
 @RV x_t = AR(a, x_t_prev, w)
-@RV x_t ~ GaussianMeanPrecision(m_x_t, w_x_t)
+c = zeros(ARorder); c[1] = 1;
+@RV y_t ~ GaussianMeanPrecision(m_y_t, w_y_t)
+DotProduct(y_t, c, x_t)
 
 # Placeholders for prior
 placeholder(m_a_t, :m_a_t, dims=(ARorder,))
@@ -48,8 +51,8 @@ placeholder(w_a_t, :w_a_t, dims=(ARorder, ARorder))
 # Placeholder for data
 placeholder(m_x_t_prev, :m_x_t_prev, dims=(ARorder,))
 placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
-placeholder(m_x_t, :m_x_t, dims=(ARorder,))
-placeholder(w_x_t, :w_x_t, dims=(ARorder, ARorder))
+placeholder(m_y_t, :m_y_t)
+placeholder(w_y_t, :w_y_t)
 
 ForneyLab.draw(g)
 
@@ -62,14 +65,14 @@ algoF = freeEnergyAlgorithm(q)
 
 # Load algorithms
 eval(Meta.parse(algo))
-eval(Meta.parse(algoF))
-display(Meta.parse(algoF))
+#eval(Meta.parse(algoF))
+#display(Meta.parse(algoF))
 
 # Define values for prior statistics
-m_a_0 = 0.0*rand(ARorder)
-w_a_0 = (tiny*diagAR(ARorder))
-m_x_prev_0 = x[ARorder - 1]
-w_x_prev_0 = (huge*diagAR(ARorder))
+m_a_0 = zeros(ARorder)
+w_a_0 = diagAR(ARorder)
+m_x_prev_0 = zeros(ARorder)
+w_x_prev_0 = diagAR(ARorder)
 
 m_x_prev = Vector{Vector{Float64}}(undef, length(y))
 w_x_prev = Vector{Array{Float64, 2}}(undef, length(y))
@@ -92,11 +95,11 @@ F = []
 p = Progress(length(y), 1, "Observed ")
 for t in 1:length(y)
     update!(p, t)
+    global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min
     marginals[:a] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_a_t_min, w=w_a_t_min)
     marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
     marginals[:w] = ProbabilityDistribution(Univariate, Gamma, a=a_w, b=b_w)
     push!(predictions, m_a_t_min'm_x_t_prev_min)
-    global m_x_t_prev_min, w_x_t_prev_min, m_a_t_min, w_a_t_min
 
     for i = 1:n_its
         data = Dict(:m_y_t => y[t],
@@ -115,7 +118,7 @@ for t in 1:length(y)
         w_a_t_min = w_a[t]
         m_x_t_prev_min = m_x_prev[t]
         w_x_t_prev_min = w_x_prev[t]
-        push!(F, freeEnergy(data, marginals))
+        #push!(F, freeEnergy(data, marginals))
 
     end
 end

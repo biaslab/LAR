@@ -63,7 +63,6 @@ function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate
     mA = S+c*ma'
     mw = unsafeMean(marg_w)
     W = Hermitian(unsafeCov(marg_a)*mw+mA'*wMatrix(mw, order)*mA)
-    display(marg_y.params[:w])
     xi = mA'*wMatrix(mw, order)*unsafeMean(marg_y)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
@@ -89,7 +88,6 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate
     ma = unsafeMean(marg_a)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*ma'*mx
-        + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
+    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*ma'*mx + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
     Message(Gamma, a=3/2, b=B/2)
 end

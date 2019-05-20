@@ -1,32 +1,24 @@
 # FIXME: Offline model doesn't work at the moment
 
-import ARdata: generate_data, generate_coefficients
+import Main.ARdata: generateAR
 using Plots
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 using Revise
 using ForneyLab
 
 # define order and generate data
-ARorder = UInt16(10)
+ARorder = 1
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
-coefs, x = generate_data(UInt64(10000), ARorder, 100)
+v_x = 1.0 # process noise variance
+coefs, data = generateAR(100, ARorder, nvar=v_x, stat=true)
 
-# splitting the data
-# FIXME
-x_series = x[1]
-for sample in x
-    append!(x_series, sample[end])
-end
-x_series = x_series[div(length(x_series), 2):end]
+# Remove t-1 sample from x
+x = [x[1] for x in data]
 
-#plot(collect(1:length(x_series)), x_series)
-
-# actual data
-x = x[div(length(x), 2):end]
-
+v_y = 2.0 # measurement noise variance
 # Observations
-y = [xi[end] for xi in x[2:end]] .+ rand()*0.000001
-n = length(y); n = 2
+y = [x + sqrt(v_y)*randn() for x in x];
+n = length(y);
 # Building the model
 g = FactorGraph()
 
