@@ -55,10 +55,10 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
             m_x_prev_0 = priors[:m_x]; w_x_prev_0 = priors[:w_x]
             a_w_0 = priors[:a]; b_w_0 = priors[:b]
         catch
-            throw("Incorrect input for priors")
+            throw("Dude, your priors' specification is incorrect!")
         end
     else
-        println("Using uninformative priors")
+        println("Dude, I will use uninfomative priors!")
         m_a_0 = zeros(ARorder)
         w_a_0 = tiny*diagAR(ARorder)
         m_x_prev_0 = zeros(ARorder)
