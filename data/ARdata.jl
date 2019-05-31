@@ -47,8 +47,8 @@ function generate_coefficients(order::Int)
     return true_a
 end
 
-function generateAR(num::Int, order::Int; nvar=1, stat=true)
-    if stat
+function generateAR(num::Int, order::Int; nvar=1, stat=true, coefs=nothing)
+    if isnothing(coefs) && stat
         coefs = generate_coefficients(order)
     else
         coefs = randn(order)
