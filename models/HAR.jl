@@ -223,7 +223,7 @@ m_θ1t = [m_θ1[1] for m_θ1 in m_θ1]
 v_θ1t = [v_x[1]^-1 for v_x in w_θ1]
 
 from = 1
-upto = 50
+upto = 100
 scatter(y, markershape = :xcross, markeralpha = 0.6,
         markersize = 2, xlabel="time t", ylabel="value", label="observations", xlims=(from, upto))
 plot!(x, color=:magenta, label=L"real \quad x_t", title="AR($ARorder) process")

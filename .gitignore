@@ -4,3 +4,4 @@ gifs/
 broken/
 demo/.ipynb_checkpoints
 models/iterative_learning.jl
+sound/
