@@ -19,7 +19,7 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 Random.seed!(42)
 
-ARorder = 2
+ARorder = 12
 
 v_θ1 = 1.0
 v_x = 100
@@ -30,6 +30,12 @@ x = [x[1] for x in dataHAR[3]]
 # Observations
 v_y = 200
 y = [xi[1] + sqrt(v_y)*randn() for xi in dataHAR[3]]
+
+using WAV
+v_y = 0.01
+x = wavread("sound/original.wav")[1]
+y = [x + sqrt(v_y)*randn() for x in x]
+wavwrite(y, "sound/noised.wav")
 
 # Creating the graph
 g = FactorGraph()
@@ -114,9 +120,9 @@ w_θ2_0 = diagAR(ARorder)
 a_θ1_0 = 0.000001
 b_θ1_0 = 0.000001
 m_θ1_prev_0 = zeros(ARorder)
-w_θ1_prev_0 = tiny*diagAR(ARorder)
+w_θ1_prev_0 = diagAR(ARorder)
 m_θ1_t_0 = zeros(ARorder)
-w_θ1_t_0 = tiny*diagAR(ARorder)
+w_θ1_t_0 = diagAR(ARorder)
 
 # Define values for bottom layer
 a_x_0 = 0.0001
@@ -222,8 +228,10 @@ v_xt = [v_x[1]^-1 for v_x in w_x]
 m_θ1t = [m_θ1[1] for m_θ1 in m_θ1]
 v_θ1t = [v_x[1]^-1 for v_x in w_θ1]
 
-from = 1
-upto = 100
+wavwrite(m_xt, "sound/result.wav", Fs=8000)
+
+from = 1500
+upto = 2000
 scatter(y, markershape = :xcross, markeralpha = 0.6,
         markersize = 2, xlabel="time t", ylabel="value", label="observations", xlims=(from, upto))
 plot!(x, color=:magenta, label=L"real \quad x_t", title="AR($ARorder) process")

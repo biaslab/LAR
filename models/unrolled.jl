@@ -23,11 +23,13 @@ v_x = 1.0 # process noise variance
 coefs, data = generateAR(100, ARorder, nvar=v_x, stat=true)
 c = zeros(ARorder); c[1] = 1;
 # Remove t-1 sample from x
+#x_data = [sin(t/10) for t in 1:100]#
 x_data = [x[1] for x in data]
 
-v_y = 2.0 # measurement noise variance
+v_y = 2 # measurement noise variance
 # Observations
 y_data = [x + sqrt(v_y)*randn() for x in x_data];
+
 n_samples = length(y_data);
 # Building the model
 g = FactorGraph()
@@ -35,7 +37,8 @@ ForneyLab.draw()
 
 @RV a ~ GaussianMeanPrecision(zeros(ARorder), diagAR(ARorder))
 @RV x_0 ~ GaussianMeanPrecision(zeros(ARorder), diagAR(ARorder))
-@RV w ~ Gamma(2, 5)
+
+@RV w ~ Gamma(0.0001, 0.0001)
 
 c = zeros(ARorder); c[1] = 1.0
 # Observarion model
@@ -75,10 +78,9 @@ eval(Meta.parse(algo_w))
 eval(Meta.parse(algo_x))
 
 data = Dict(:y => y_data)
-
 # Initial recognition distributions
-marginals = Dict(:a => vague(GaussianMeanPrecision, ARorder),
-                 :w => vague(Gamma))
+marginals = Dict(:a => ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=zeros(ARorder), w=diagAR(ARorder)),
+                 :w => ProbabilityDistribution(Univariate, Gamma, a=0.0001, b=0.0001))
 
 for t in 0:n_samples
     marginals[:x_*t] = vague(GaussianMeanPrecision, ARorder)
