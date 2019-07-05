@@ -1,7 +1,7 @@
 .DS_Store
 .gif
 gifs/
-broken/
+playground/
 demo/.ipynb_checkpoints
 models/iterative_learning.jl
 sound/

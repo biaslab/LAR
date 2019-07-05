@@ -12,9 +12,9 @@ order, c, S = Nothing, Nothing, Nothing
 
 diagAR(dim) = Matrix{Float64}(I, dim, dim)
 
-function wMatrix(w, order)
+function wMatrix(γ, order)
     mW = huge*diagAR(order)
-    mW[1, 1] = w
+    mW[1, 1] = γ
     return mW
 end
 
@@ -42,52 +42,52 @@ end
 
 function ruleVariationalAROutNPPP(marg_y :: Nothing,
                                   marg_x :: ProbabilityDistribution{Multivariate},
-                                  marg_a :: ProbabilityDistribution{Multivariate},
-                                  marg_w :: ProbabilityDistribution{Univariate})
-    ma = unsafeMean(marg_a)
-    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ?
-                       defineOrder(length(ma)) : order
-    mA = S+c*ma'
+                                  marg_θ :: ProbabilityDistribution{Multivariate},
+                                  marg_γ :: ProbabilityDistribution{Univariate})
+    mθ = unsafeMean(marg_θ)
+    order == Nothing ? defineOrder(length(mθ)) : order != length(mθ) ?
+                       defineOrder(length(mθ)) : order
+    mA = S+c*mθ'
     m = mA*unsafeMean(marg_x)
-    W = Hermitian(wMatrix(unsafeMean(marg_w), order))
+    W = Hermitian(wMatrix(unsafeMean(marg_γ), order))
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
 function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate},
                                   marg_x :: Nothing,
-                                  marg_a :: ProbabilityDistribution{Multivariate},
-                                  marg_w :: ProbabilityDistribution{Univariate})
-    ma = unsafeMean(marg_a)
-    order == Nothing ? defineOrder(length(ma)) : order != length(ma) ?
-                       defineOrder(length(ma)) : order
-    mA = S+c*ma'
-    mw = unsafeMean(marg_w)
-    W = Hermitian(unsafeCov(marg_a)*mw+mA'*wMatrix(mw, order)*mA)
-    xi = mA'*wMatrix(mw, order)*unsafeMean(marg_y)
+                                  marg_θ :: ProbabilityDistribution{Multivariate},
+                                  marg_γ :: ProbabilityDistribution{Univariate})
+    mθ = unsafeMean(marg_θ)
+    order == Nothing ? defineOrder(length(mθ)) : order != length(mθ) ?
+                       defineOrder(length(mθ)) : order
+    mA = S+c*mθ'
+    mγ = unsafeMean(marg_γ)
+    W = Hermitian(unsafeCov(marg_θ)*mγ+mA'*wMatrix(mγ, order)*mA)
+    xi = mA'*wMatrix(mγ, order)*unsafeMean(marg_y)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
 function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate},
                                   marg_x :: ProbabilityDistribution{Multivariate},
-                                  marg_a :: Nothing,
-                                  marg_w :: ProbabilityDistribution{Univariate})
+                                  marg_θ :: Nothing,
+                                  marg_γ :: ProbabilityDistribution{Univariate})
     my = unsafeMean(marg_y)
     order == Nothing ? defineOrder(length(my)) : order != length(my) ?
                        defineOrder(length(my)) : order
     mx = unsafeMean(marg_x)
-    mw = unsafeMean(marg_w)
-    W = Hermitian(unsafeCov(marg_x)*mw+mx*mw*mx')
-    xi = (mx*c'*wMatrix(mw, order)*my)
+    mγ = unsafeMean(marg_γ)
+    W = Hermitian(unsafeCov(marg_x)*mγ+mx*mγ*mx')
+    xi = (mx*c'*wMatrix(mγ, order)*my)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
 function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate},
                                   marg_x :: ProbabilityDistribution{Multivariate},
-                                  marg_a :: ProbabilityDistribution{Multivariate},
-                                  marg_w :: Nothing)
-    ma = unsafeMean(marg_a)
+                                  marg_θ :: ProbabilityDistribution{Multivariate},
+                                  marg_γ :: Nothing)
+    mθ = unsafeMean(marg_θ)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*ma'*mx + ma'*(unsafeCov(marg_x)+mx*mx')*ma + mx'*unsafeCov(marg_a)*mx
+    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*mθ'*mx + mθ'*(unsafeCov(marg_x)+mx*mx')*mθ + mx'*unsafeCov(marg_θ)*mx
     Message(Gamma, a=3/2, b=B/2)
 end
