@@ -1,6 +1,6 @@
 import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!, averageEnergy
-import SpecialFunctions: polygamma
-export Autoregression, AR, slug, averageEnergy
+import SpecialFunctions: polygamma, digamma
+export Autoregression, AR, averageEnergy
 
 """
 Description:
@@ -46,7 +46,7 @@ function AR(θ::Variable, x::Variable, γ::Variable)
     return y
 end
 
-slug(::Type{Autoregression}) = "AR"
+ForneyLab.slug(::Type{Autoregression}) = "AR"
 
 # Average energy functional
 function averageEnergy(::Type{Autoregression},
@@ -65,5 +65,5 @@ function averageEnergy(::Type{Autoregression},
     Vx = unsafeCov(marg_x)
     B1 = tr(mW*unsafeCov(marg_y)) + my'*mW*my - (mA*mx)'*mW*my - my'*mW*mA*mx + tr(S'*mW*S*Vx)
     B2 = mγ*mθ'*Vx*mθ + tr(S'*mW*S*mx*mx') + mγ*mx'*covθ*mx + mγ*mθ'*mx*mx'*mθ
-    -0.5*(polygamma(0, marg_γ.params[:a]) - log(marg_γ.params[:b]) - 0.5*(1-order)*log(tiny) + 0.5*order*log(2*pi)) + 0.5*(B1 + B2)
+    -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b]) - 0.5*(1-order)*log(tiny) + 0.5*order*log(2*pi)) + 0.5*(B1 + B2)
 end
