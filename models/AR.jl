@@ -15,30 +15,19 @@ import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 function buildGraphAR(ARorder)
     graph = FactorGraph()
     # declare priors as random variables
-    @RV m_x_t_prev
-    @RV w_x_t_prev
-    @RV m_θ_t
-    @RV w_θ_t
-    @RV m_y_t
-    @RV w_y_t
-    @RV a_w_t
-    @RV b_w_t
-    @RV θ ~ GaussianMeanPrecision(m_θ_t, w_θ_t)
-    @RV x_t_prev ~ GaussianMeanPrecision(m_x_t_prev, w_x_t_prev)
-    @RV γ ~ Gamma(a_w_t, b_w_t)
-    @RV x_t = AR(θ, x_t_prev, γ)
-    observationAR(m_y_t, x_t, w_y_t)
+    @RV θ ~ GaussianMeanPrecision(placeholder(:m_θ_t, dims=(ARorder,)),
+                                  placeholder(:w_θ_t, dims=(ARorder, ARorder)))
 
-    # Placeholders for prior
-    placeholder(m_θ_t, :m_θ_t, dims=(ARorder,))
-    placeholder(w_θ_t, :w_θ_t, dims=(ARorder, ARorder))
+    @RV x_t_prev ~ GaussianMeanPrecision(placeholder(:m_x_t_prev, dims=(ARorder,)),
+                                         placeholder(:w_x_t_prev, dims=(ARorder, ARorder)))
+
+    @RV γ ~ Gamma(placeholder(:a_w_t), placeholder(:b_w_t))
+    @RV x_t = AR(θ, x_t_prev, γ)
+    c = zeros(ARorder); c[1] = 1;
+    @RV y_t ~ GaussianMeanPrecision(dot(c, x_t), placeholder(:w_y_t))
+
     # Placeholder for data
-    placeholder(m_x_t_prev, :m_x_t_prev, dims=(ARorder,))
-    placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
-    placeholder(a_w_t, :a_w_t)
-    placeholder(b_w_t, :b_w_t)
-    placeholder(m_y_t, :m_y_t)
-    placeholder(w_y_t, :w_y_t)
+    placeholder(y_t, :y_t)
 
     # Specify recognition factorization
     q = RecognitionFactorization(θ, x_t, x_t_prev, γ, ids=[:Θ :X_t :X_t_prev :Γ])
@@ -101,7 +90,7 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
         marginals[:γ] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
         if @isdefined(F); f = Vector{Float64}(undef, vmp_iter) end
         for i = 1:vmp_iter
-            data = Dict(:m_y_t => observations[t],
+            data = Dict(:y_t => observations[t],
                         :w_y_t => obs_noise_var^-1,
                         :m_θ_t => m_θ_t_min,
                         :w_θ_t => w_θ_t_min,
