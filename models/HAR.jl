@@ -2,24 +2,21 @@
 ## Generate data, build a model and run inference
 using ProgressMeter
 using Revise
-using ForneyLab
 using Random
 using Plots
 using LaTeXStrings
 using StatsPlots
-include( "../AR-node/autoregression.jl")
-include( "../AR-node/observationAR.jl")
-include("../AR-node/rules_prototypes.jl")
-include("../AR-node/vmp_rules.jl")
+include("../data/DataAR.jl")
+include("../ARNode/ARNode.jl")
 include("../helpers/functions.jl")
-include("../data/ARdata.jl")
-import Main.ARdata: generateHAR, generateAR
+using .ARNode, .DataAR
+using ForneyLab
 import LinearAlgebra.I, LinearAlgebra.Symmetric
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 Random.seed!(42)
 
-ARorder = 12
+ARorder = 2
 
 v_θ1 = 1.0
 v_x = 100
@@ -31,11 +28,11 @@ x = [x[1] for x in dataHAR[3]]
 v_y = 200
 y = [xi[1] + sqrt(v_y)*randn() for xi in dataHAR[3]]
 
-using WAV
-v_y = 0.01
-x = wavread("sound/original.wav")[1]
-y = [x + sqrt(v_y)*randn() for x in x]
-wavwrite(y, "sound/noised.wav")
+# using WAV
+# v_y = 0.01
+# x = wavread("sound/original.wav")[1]
+# y = [x + sqrt(v_y)*randn() for x in x]
+# wavwrite(y, "sound/noised.wav")
 
 # Creating the graph
 g = FactorGraph()
@@ -62,9 +59,8 @@ g = FactorGraph()
 @RV x_t = AR(θ1_t, x_t_prev, w_x)
 
 # Observation
-@RV m_y_t
-@RV w_y_t
-observationAR(m_y_t, x_t, w_y_t)
+c = zeros(ARorder); c[1] = 1;
+@RV y_t ~ GaussianMeanPrecision(dot(c, x_t), placeholder(:w_y_t))
 
 # Placeholders for prior of upper layer
 placeholder(m_θ2, :m_θ2, dims=(ARorder,))
@@ -80,9 +76,8 @@ placeholder(b_x, :b_x)
 placeholder(m_x_t_prev, :m_x_t_prev, dims=(ARorder,))
 placeholder(w_x_t_prev, :w_x_t_prev, dims=(ARorder, ARorder))
 
-# Placeholder for observations
-placeholder(m_y_t, :m_y_t)
-placeholder(w_y_t, :w_y_t)
+# Placeholder for data
+placeholder(y_t, :y_t)
 
 ForneyLab.draw(g)
 
@@ -116,19 +111,19 @@ b_x = Vector{Float64}(undef, length(y))
 
 # Define values for upper layer
 m_θ2_0 = zeros(ARorder)
-w_θ2_0 = diagAR(ARorder)
+w_θ2_0 = diageye(ARorder)
 a_θ1_0 = 0.000001
 b_θ1_0 = 0.000001
 m_θ1_prev_0 = zeros(ARorder)
-w_θ1_prev_0 = diagAR(ARorder)
+w_θ1_prev_0 = diageye(ARorder)
 m_θ1_t_0 = zeros(ARorder)
-w_θ1_t_0 = diagAR(ARorder)
+w_θ1_t_0 = diageye(ARorder)
 
 # Define values for bottom layer
 a_x_0 = 0.0001
 b_x_0 = 0.0001
 m_x_t_prev_0 = zeros(ARorder)
-w_x_t_prev_0 = diagAR(ARorder)
+w_x_t_prev_0 = diageye(ARorder)
 
 # Priors upper layer
 m_θ2_min = m_θ2_0
@@ -170,7 +165,7 @@ for t in 1:length(y)
            m_θ1_t_min, w_θ1_t_min, m_x_t_prev_min, w_x_t_prev_min, a_x_min, b_x_min, data
 
     for i = 1:n_its
-        data = Dict(:m_y_t => y[t],
+        data = Dict(:y_t => y[t],
                     :w_y_t => v_y^-1,
                     :m_θ2 => m_θ2_min,
                     :w_θ2 => w_θ2_min,
@@ -230,8 +225,8 @@ v_θ1t = [v_x[1]^-1 for v_x in w_θ1]
 
 wavwrite(m_xt, "sound/result.wav", Fs=8000)
 
-from = 1500
-upto = 2000
+from = 100
+upto = 200
 scatter(y, markershape = :xcross, markeralpha = 0.6,
         markersize = 2, xlabel="time t", ylabel="value", label="observations", xlims=(from, upto))
 plot!(x, color=:magenta, label=L"real \quad x_t", title="AR($ARorder) process")
