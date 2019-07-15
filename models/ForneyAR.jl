@@ -1,16 +1,17 @@
 # Unknown process and known measurement noises (UPKM)
 # joint estimations of x, θ and γ (process noise)
 
+module ForneyAR
+
 using ProgressMeter
 using ForneyLab
 using Random
 using LinearAlgebra
-include( "../AR-node/autoregression.jl")
-include("../AR-node/rules_prototypes.jl")
-include("../AR-node/vmp_rules.jl")
-include( "../AR-node/observationAR.jl")
-include("../helpers/functions.jl")
+include( "../ARnode/ARNode.jl")
+using .ARNode
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
+
+export buildGraphAR, inferAR
 
 function buildGraphAR(ARorder)
     graph = FactorGraph()
@@ -82,7 +83,7 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
     algo = variationalAlgorithm(r_factorization)
     eval(Meta.parse(algo))
 
-    p = Progress(length(y), 1, "Observed ")
+    p = Progress(length(observations), 1, "Observed ")
     for t in 1:length(observations)
         update!(p, t)
         marginals[:θ] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_θ_t_min, w=w_θ_t_min)
@@ -98,6 +99,10 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
                         :w_x_t_prev => w_x_t_prev_min,
                         :a_w_t => a_w_t_min,
                         :b_w_t => b_w_t_min)
+            # stepX_t!(data, marginals)
+            # stepΘ!(data, marginals)
+            # stepΓ!(data, marginals)
+            # stepX_t_prev!(data, marginals)
             Base.invokelatest(stepX_t!, data, marginals)
             Base.invokelatest(stepΘ!, data, marginals)
             Base.invokelatest(stepΓ!, data, marginals)
@@ -132,3 +137,5 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
         return marginals
     end
 end
+
+end  # module ARFFG

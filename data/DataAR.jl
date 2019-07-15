@@ -1,7 +1,10 @@
-module ARdata
+module DataAR
+
 using CSV
 using DataFrames
 import PolynomialRoots.roots
+
+export loadAR, generateAR, generateHAR, generateSIN, writeAR, readAR
 
 # Filter bad data
 FloatParse(x) =
@@ -85,7 +88,7 @@ function generateHAR(num::Int, order::Int; levels=2, nvars=[], stat=true)
     return data
 end
 
-function generate_sin(num::Int, noise_variance=1/5)
+function generateSIN(num::Int, noise_variance=1/5)
     coefs = [2cos(1), -1]
     order = length(coefs)
     inits = [sin(1), sin(0)]

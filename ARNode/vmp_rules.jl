@@ -1,12 +1,14 @@
+import LinearAlgebra: I, Hermitian, tr
+import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
+
 export ruleVariationalAROutNPPP,
        ruleVariationalARIn1PNPP,
        ruleVariationalARIn2PPNP,
        ruleVariationalARIn3PPPN,
        uvector,
        shift,
+       diagAR,
        wMatrix
-
-import LinearAlgebra: Hermitian, tr
 
 order, c, S = Nothing, Nothing, Nothing
 

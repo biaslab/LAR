@@ -1,6 +1,8 @@
-import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!, averageEnergy
+using ForneyLab
+import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!,
+                  averageEnergy, Interface, Variable, slug, ProbabilityDistribution
 import SpecialFunctions: polygamma, digamma
-export Autoregression, AR, averageEnergy
+export Autoregression, AR, averageEnergy, slug
 
 """
 Description:
@@ -46,7 +48,7 @@ function AR(θ::Variable, x::Variable, γ::Variable)
     return y
 end
 
-ForneyLab.slug(::Type{Autoregression}) = "AR"
+slug(::Type{Autoregression}) = "AR"
 
 # Average energy functional
 function averageEnergy(::Type{Autoregression},
