@@ -99,10 +99,6 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
                         :w_x_t_prev => w_x_t_prev_min,
                         :a_w_t => a_w_t_min,
                         :b_w_t => b_w_t_min)
-            # stepX_t!(data, marginals)
-            # stepΘ!(data, marginals)
-            # stepΓ!(data, marginals)
-            # stepX_t_prev!(data, marginals)
             Base.invokelatest(stepX_t!, data, marginals)
             Base.invokelatest(stepΘ!, data, marginals)
             Base.invokelatest(stepΓ!, data, marginals)
