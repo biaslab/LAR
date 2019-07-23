@@ -7,7 +7,6 @@ export ruleVariationalAROutNPPP,
        ruleVariationalARIn3PPPN,
        uvector,
        shift,
-       diagAR,
        wMatrix
 
 order, c, S = Nothing, Nothing, Nothing
