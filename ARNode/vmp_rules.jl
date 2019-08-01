@@ -89,6 +89,6 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate
     mθ = unsafeMean(marg_θ)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*mθ'*mx + mθ'*(unsafeCov(marg_x)+mx*mx')*mθ + mx'*unsafeCov(marg_θ)*mx
+    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*mθ'*mx + mθ'*(unsafeCov(marg_x)+mx*mx')*mθ + tr(unsafeCov(marg_θ)*unsafeCov(marg_x)) + mx'*unsafeCov(marg_θ)*mx
     Message(Gamma, a=3/2, b=B/2)
 end

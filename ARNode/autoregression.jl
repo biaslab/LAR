@@ -1,8 +1,10 @@
 using ForneyLab
+using LinearAlgebra
 import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!,
-                  averageEnergy, Interface, Variable, slug, ProbabilityDistribution
+                  averageEnergy, Interface, Variable, slug, ProbabilityDistribution,
+                  differentialEntropy
 import SpecialFunctions: polygamma, digamma
-export Autoregression, AR, averageEnergy, slug
+export Autoregression, AR, averageEnergy, slug, differentialEntropy
 
 """
 Description:
@@ -58,14 +60,28 @@ function averageEnergy(::Type{Autoregression},
                        marg_γ::ProbabilityDistribution{Univariate})
     order = length(mean(marg_y))
     mθ = unsafeMean(marg_θ)
-    covθ = unsafeCov(marg_θ)
+    Vθ = unsafeCov(marg_θ)
     mA = S+c*mθ'
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
     mγ = unsafeMean(marg_γ)
     mW = wMatrix(mγ, order)
     Vx = unsafeCov(marg_x)
+    Vy = unsafeCov(marg_y)
     B1 = tr(mW*unsafeCov(marg_y)) + my'*mW*my - (mA*mx)'*mW*my - my'*mW*mA*mx + tr(S'*mW*S*Vx)
-    B2 = mγ*mθ'*Vx*mθ + tr(S'*mW*S*mx*mx') + mγ*mx'*covθ*mx + mγ*mθ'*mx*mx'*mθ
-    -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b]) - 0.5*(1-order)*log(tiny) + 0.5*order*log(2*pi)) + 0.5*(B1 + B2)
+    B2 = mγ*tr(Vθ*Vx) + mγ*mθ'*Vx*mθ + tr(S'*mW*S*mx*mx') + mγ*mx'*Vθ*mx + mγ*mθ'*mx*mx'*mθ
+    #tmp = -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b])) - 0.5*(1-order)*log(tiny) + 0.5*order*log(2*pi) + 0.5*(B1 + B2)
+    valid = -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b])) + 0.5*log(2*pi) + 0.5*mγ*(Vy[1]+(my[1])^2 - 2*mθ'*mx*my[1] + tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
+end
+
+function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) where F<:Gaussian
+
+
+    distAR = convert(ProbabilityDistribution{Multivariate, GaussianMeanVariance}, dist)
+    dim = size((distAR.params[:v]))[1]
+    if dim > 1 && sum(distAR.params[:v][2:dim]) < (dim-1)*1.0e-12
+        return 0.5*log(det(distAR.params[:v][1])) + (1/2)*log(2*pi) + (1/2)
+    else
+        return 0.5*log(det(unsafeCov(dist))) + (dims(dist)/2)*log(2*pi) + (dims(dist)/2)
+    end
 end
