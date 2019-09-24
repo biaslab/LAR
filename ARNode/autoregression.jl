@@ -44,11 +44,11 @@ mutable struct Autoregression <: SoftFactor
     end
 end
 
-function AR(θ::Variable, x::Variable, γ::Variable)
-    y = Variable()
-    Autoregression(y, θ, x, γ)
-    return y
-end
+# function AR(θ::Variable, x::Variable, γ::Variable)
+#     y = Variable()
+#     Autoregression(y, θ, x, γ)
+#     return y
+# end
 
 slug(::Type{Autoregression}) = "AR"
 

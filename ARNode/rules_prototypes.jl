@@ -21,20 +21,24 @@
 
 @structuredVariationalRule(:node_type     => Autoregression,
                            :outbound_type => Message{GaussianMeanVariance},
-                           :inbound_types => (Nothing, ProbabilityDistribution, ProbabilityDistribution, ProbabilityDistribution),
+                           :inbound_types => (Nothing, Message{Gaussian}, ProbabilityDistribution, ProbabilityDistribution),
                            :name          => SVariationalAROutNPPP)
 
 @structuredVariationalRule(:node_type     => Autoregression,
                            :outbound_type => Message{GaussianMeanVariance},
-                           :inbound_types => (ProbabilityDistribution, Nothing, ProbabilityDistribution, ProbabilityDistribution),
+                           :inbound_types => (Message{Gaussian}, Nothing, ProbabilityDistribution, ProbabilityDistribution),
                            :name          => SVariationalARIn1PNPP)
 
 @structuredVariationalRule(:node_type     => Autoregression,
                            :outbound_type => Message{GaussianMeanVariance},
-                           :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, Nothing, ProbabilityDistribution),
+                           :inbound_types => (ProbabilityDistribution, Nothing, ProbabilityDistribution),
                            :name          => SVariationalARIn2PPNP)
 
 @structuredVariationalRule(:node_type     => Autoregression,
                            :outbound_type => Message{Gamma},
-                           :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, ProbabilityDistribution, Nothing),
+                           :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, Nothing),
                            :name          => SVariationalARIn3PPPN)
+
+@marginalRule(:node_type => Autoregression,
+              :inbound_types => (Message{Gaussian}, Message{Gaussian}, ProbabilityDistribution, ProbabilityDistribution),
+              :name => MGaussianMeanVarianceGGGD)
