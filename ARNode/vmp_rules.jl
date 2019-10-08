@@ -150,11 +150,9 @@ function ruleSVariationalARIn1PNPP(msg_y :: Message{F, Multivariate},
     Vy = unsafeCov(msg_y.dist)
     Vθ = unsafeCov(marg_θ)
     trans = transition(mγ, order)
-    G = inv(mA) + inv(mA)*trans*inv(mA)'*inv(inv(mγ)*Vθ + inv(mA)*trans*inv(mA)')*inv(mA)
-    mx = G*(my-Vy*inv(trans + Vy)*my)
-    Z = Vy - Vy*inv(trans+Vy)*Vy
-    Vx = G*Z*G' + Z
-    # Check if parameters are of Array type
+    D = mA'*inv(Vy + trans)*mA + mγ*Vθ
+    Vx = inv(D)
+    mx = inv(D)*mA'*inv(Vy + trans)*my
     Vx = isa(Vx, Array) ? Vx : [Vx]
     mx = isa(mx, Array) ? mx : [mx]
     Message(Multivariate, GaussianMeanVariance, m=mx, v=Vx)
@@ -163,27 +161,30 @@ end
 function ruleSVariationalARIn2PPNP(marg_xy :: ProbabilityDistribution{Multivariate},
                                    marg_θ :: Nothing,
                                    marg_γ :: ProbabilityDistribution{Univariate})
-    # order must be initialized at this stage
+    order == Nothing ? defineOrder(div(length(marg_xy.params[:m]), 2)) : order != div(length(marg_xy.params[:m]), 2) ?
+                       defineOrder(div(length(marg_xy.params[:m]), 2)) : order
     my = marg_xy.params[:m][1:order]
     mx = marg_xy.params[:m][order+1:end]
     Vy = marg_xy.params[:v][1:order,1:order]
     Vx = marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
     mγ = unsafeMean(marg_γ)
-    D = inv(mγ*(Vx + mx*mx'))
+    D = mγ*(Vx + mx*mx')
     u = zeros(order); u[1] = mγ
-    m = inv(D)*(Vxy + mx*my')*u
+    mθ = inv(D)*(Vxy + mx*my')*u
+    Vθ = inv(D)
     # Check if parameters are of Array type
-    D = isa(D, Array) ? D : [D]
-    m = isa(m, Array) ? m : [m]
-    Message(Multivariate, GaussianMeanVariance, m=m, v=inv(D))
+    Vθ = isa(Vθ, Array) ? Vθ : [Vθ]
+    mθ = isa(mθ, Array) ? mθ : [mθ]
+    Message(Multivariate, GaussianMeanVariance, m=mθ, v=Vθ)
 end
 
 function ruleSVariationalARIn3PPPN(marg_xy :: ProbabilityDistribution{Multivariate},
                                    marg_θ :: ProbabilityDistribution{Multivariate},
                                    marg_γ :: Nothing)
-    # order must be initialized at this stage
     mθ = unsafeMean(marg_θ)
+    order == Nothing ? defineOrder(length(mθ)) : order != length(mθ) ?
+                       defineOrder(length(mθ)) : order
     mA = S+c*mθ'
     Vθ = unsafeCov(marg_θ)
     my = marg_xy.params[:m][1:order]
@@ -191,8 +192,7 @@ function ruleSVariationalARIn3PPPN(marg_xy :: ProbabilityDistribution{Multivaria
     Vy = marg_xy.params[:v][1:order,1:order]
     Vx = marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
-
-    B = (Vx + mx*mx')[1, 1] + 2*(mA*(Vxy + mx*my'))[1, 1] + (mA*(Vx + mx*mx')*mA')[1, 1] + (Vy + my*my')[1, 1]
+    B = (Vθ*(Vx + mx*mx'))[1, 1] + 2*(mA*(Vxy + mx*my'))[1, 1] + (mA*(Vx + mx*mx')*mA')[1, 1] + (Vy + my*my')[1, 1]
     Message(Gamma, a=3/2, b=B)
 end
 
@@ -209,32 +209,22 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
                        defineOrder(length(mθ)) : order
     trans = transition(mγ, order)
 
-    dist_y = convert(ProbabilityDistribution{V, GaussianMeanVariance}, msg_y.dist)
-    dist_x = convert(ProbabilityDistribution{V, GaussianMeanVariance}, msg_x.dist)
+    f_msg_y = ruleSVariationalAROutNPPP(nothing, msg_x, dist_θ, dist_γ)
+    b_msg_x = ruleSVariationalARIn1PNPP(msg_y, nothing, dist_θ, dist_γ)
 
-    f_mx = unsafeMean(dist_x)
-    f_Vx = unsafeCov(dist_x)
-    b_msg = ruleSVariationalARIn1PNPP(msg_y, nothing, dist_θ, dist_γ)
-    b_mx = unsafeMean(b_msg.dist)
-    b_Vx = unsafeCov(b_msg.dist)
+    f_Vx = unsafeCov(msg_x.dist)
+    f_Vy = unsafeCov(f_msg_y.dist)
+    b_Vy = unsafeCov(msg_y.dist)
 
-    b_my = unsafeMean(dist_y)
-    b_Vy = unsafeCov(dist_y)
-    f_msg = ruleSVariationalAROutNPPP(nothing, msg_x, dist_θ, dist_γ)
-    f_my = unsafeMean(f_msg.dist)
-    f_Vy = unsafeCov(f_msg.dist)
+    marg_y = f_msg_y.dist * msg_y.dist
+    marg_x = b_msg_x.dist * msg_x.dist
 
-    D = (inv(f_Vx) + mγ*Vθ)
-    marg_y = f_msg.dist * dist_y
-    marg_x = b_msg.dist * dist_x
-
-    I = diagAR(order)
     my = unsafeMean(marg_y)
-    mx = unsafeMean(marg_x)
-
-    Vxy = inv(D)*mA'*inv(f_Vy + b_Vy)*b_Vy
+    mx = unsafeMean(marg_x);
     Vy = unsafeCov(marg_y)
-    Vx = unsafeCov(marg_x)
+    Vx = unsafeCov(marg_x);
+    D =  inv(f_Vx) + mγ*Vθ
+    Vxy = inv(D)*mA'*inv(f_Vy + b_Vy)*b_Vy
 
-    return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=[my; mx], v=[Vy Vxy; Vxy Vx])
+    return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=[my; mx], v=[Vy Vxy; Vxy' Vx])
 end
