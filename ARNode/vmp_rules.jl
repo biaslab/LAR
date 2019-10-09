@@ -208,23 +208,14 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     order == Nothing ? defineOrder(length(mθ)) : order != length(mθ) ?
                        defineOrder(length(mθ)) : order
     trans = transition(mγ, order)
+    mW = wMatrix(mγ, order)
 
-    f_msg_y = ruleSVariationalAROutNPPP(nothing, msg_x, dist_θ, dist_γ)
-    b_msg_x = ruleSVariationalARIn1PNPP(msg_y, nothing, dist_θ, dist_γ)
-
-    f_Vx = unsafeCov(msg_x.dist)
-    f_Vy = unsafeCov(f_msg_y.dist)
+    b_my = unsafeMean(msg_y.dist)
     b_Vy = unsafeCov(msg_y.dist)
-
-    marg_y = f_msg_y.dist * msg_y.dist
-    marg_x = b_msg_x.dist * msg_x.dist
-
-    my = unsafeMean(marg_y)
-    mx = unsafeMean(marg_x);
-    Vy = unsafeCov(marg_y)
-    Vx = unsafeCov(marg_x);
-    D =  inv(f_Vx) + mγ*Vθ
-    Vxy = inv(D)*mA'*inv(f_Vy + b_Vy)*b_Vy
-
-    return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=[my; mx], v=[Vy Vxy; Vxy' Vx])
+    f_mx = unsafeMean(msg_x.dist)
+    f_Vx = unsafeCov(msg_x.dist)
+    
+    W = [inv(b_Vy)+mW -mW*mA; -mA'*mW inv(f_Vx)+mA'*mW*mA]
+    m = inv(W)*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
+    return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=inv(W))
 end
