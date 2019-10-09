@@ -214,8 +214,8 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     b_Vy = unsafeCov(msg_y.dist)
     f_mx = unsafeMean(msg_x.dist)
     f_Vx = unsafeCov(msg_x.dist)
-    
-    W = [inv(b_Vy)+mW -mW*mA; -mA'*mW inv(f_Vx)+mA'*mW*mA]
+    D = inv(f_Vx) + mγ*Vθ
+    W = [inv(b_Vy)+mW -mW*mA; -mA'*mW inv(D)+mA'*mW*mA]
     m = inv(W)*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
     return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=inv(W))
 end
