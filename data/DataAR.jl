@@ -63,7 +63,6 @@ function generateAR(num::Int, order::Int; nvar=1, stat=true, coefs=nothing)
     data[1] = inits
     for i in 2:num+3*order
         data[i] = insert!(data[i-1][1:end-1], 1, rand(Distributions.Normal(coefs'data[i-1], sqrt(nvar)), 1)[1])
-        #ata[i][1] += sqrt(nvar)*randn()
     end
     data = data[1+3*order:end]
     return coefs, data
