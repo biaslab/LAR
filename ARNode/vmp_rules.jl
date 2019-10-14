@@ -52,14 +52,6 @@ function defineOrder(dim)
     S = shift(order)
 end
 
-function shiftD(matrix, γ)
-    for i in 2:size(matrix)[1]
-        matrix[i, i] = matrix[i - 1, i - 1]
-    end
-    matrix[1] = γ
-    return matrix
-end
-
 function ruleVariationalAROutNPPP(marg_y :: Nothing,
                                   marg_x :: ProbabilityDistribution{Multivariate},
                                   marg_θ :: ProbabilityDistribution{Multivariate},
@@ -69,8 +61,7 @@ function ruleVariationalAROutNPPP(marg_y :: Nothing,
                        defineOrder(length(mθ)) : order
     mA = S+c*mθ'
     m = mA*unsafeMean(marg_x)
-    #W = Hermitian(mθ'*wMatrix(unsafeMean(marg_γ)*mθ, order))
-    W = Hermitian(shiftD(unsafeCov(marg_x), mθ'*unsafeMean(marg_γ)*mθ))
+    W = wMatrix(unsafeMean(marg_γ), order)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
 end
 
@@ -83,9 +74,11 @@ function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate
                        defineOrder(length(mθ)) : order
     mA = S+c*mθ'
     mγ = unsafeMean(marg_γ)
-    W = Hermitian(mγ*(unsafeCov(marg_θ) + mθ*mθ'))#Hermitian(unsafeCov(marg_θ)*mγ+mA'*wMatrix(mγ, order)*mA)
-    xi = mθ*unsafeMean(marg_y)[1]#mA'*wMatrix(mγ, order)*unsafeMean(marg_y)
-    Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
+    mV = transition(mγ, order)
+    my = unsafeMean(marg_y)
+    D = inv(mA)*mV*inv(mA') - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + mγ*unsafeCov(marg_θ))*inv(mA)*mV*inv(mA')
+    invDz = inv(mA)*my - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + mγ*unsafeCov(marg_θ))*inv(mA)*my
+    Message(Multivariate, GaussianWeightedMeanPrecision, xi=invDz, w=D)
 end
 
 function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate},
@@ -97,7 +90,7 @@ function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate
                        defineOrder(length(my)) : order
     mx = unsafeMean(marg_x)
     mγ = unsafeMean(marg_γ)
-    W = Hermitian(unsafeCov(marg_x)*mγ+mx*mγ*mx')
+    W = unsafeCov(marg_x)*mγ+mx*mγ*mx'
     xi = (mx*c'*wMatrix(mγ, order)*my)
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
@@ -109,7 +102,10 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate
     mθ = unsafeMean(marg_θ)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
-    B = unsafeCov(marg_y)[1, 1] + my[1]*my[1] - 2*my[1]*mθ'*mx + mθ'*(unsafeCov(marg_x)+mx*mx')*mθ + tr(unsafeCov(marg_θ)*unsafeCov(marg_x)) + mx'*unsafeCov(marg_θ)*mx
+    Vθ = unsafeCov(marg_θ)
+    Vy = unsafeCov(marg_y)
+    Vx = unsafeCov(marg_x)
+    B = Vy[1, 1] + my[1]*my[1] - 2*my[1]*mθ'*mx + mx'*Vθ*mx + mθ'*(Vx+mx*mx')*mθ
     Message(Gamma, a=3/2, b=B/2)
 end
 
@@ -192,7 +188,7 @@ function ruleSVariationalARIn3PPPN(marg_xy :: ProbabilityDistribution{Multivaria
     Vy = marg_xy.params[:v][1:order,1:order]
     Vx = marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
-    B = (Vθ*(Vx + mx*mx'))[1, 1] + 2*(mA*(Vxy + mx*my'))[1, 1] + (mA*(Vx + mx*mx')*mA')[1, 1] + (Vy + my*my')[1, 1]
+    B = (Vy + my*my')[1, 1] + 2*(mA*(Vxy + mx*my'))[1, 1] + (mA*(Vx + mx*mx')*mA')[1, 1] + (Vθ*(Vx + mx*mx'))[1, 1]
     Message(Gamma, a=3/2, b=B)
 end
 
@@ -215,7 +211,7 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     f_mx = unsafeMean(msg_x.dist)
     f_Vx = unsafeCov(msg_x.dist)
     D = inv(f_Vx) + mγ*Vθ
-    W = [inv(b_Vy)+mW -mW*mA; -mA'*mW inv(D)+mA'*mW*mA]
+    W = [inv(b_Vy)+mW -mW*mA; -mA'*mW D+mA'*mW*mA]
     m = inv(W)*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
     return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=inv(W))
 end
