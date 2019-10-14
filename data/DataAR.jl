@@ -3,6 +3,7 @@ module DataAR
 using CSV
 using DataFrames
 import PolynomialRoots.roots
+using Distributions
 
 export loadAR, generateAR, generateHAR, generateSIN, writeAR, readAR
 
@@ -51,6 +52,7 @@ function generate_coefficients(order::Int)
 end
 
 function generateAR(num::Int, order::Int; nvar=1, stat=true, coefs=nothing)
+    d = Normal()
     if isnothing(coefs) && stat
         coefs = generate_coefficients(order)
     else
@@ -60,8 +62,8 @@ function generateAR(num::Int, order::Int; nvar=1, stat=true, coefs=nothing)
     data = Vector{Vector{Float64}}(undef, num+3*order)
     data[1] = inits
     for i in 2:num+3*order
-        data[i] = insert!(data[i-1][1:end-1], 1, coefs'data[i-1])
-        data[i][1] += sqrt(nvar)*randn()
+        data[i] = insert!(data[i-1][1:end-1], 1, rand(Distributions.Normal(coefs'data[i-1], sqrt(nvar)), 1)[1])
+        #ata[i][1] += sqrt(nvar)*randn()
     end
     data = data[1+3*order:end]
     return coefs, data
@@ -80,8 +82,7 @@ function generateHAR(num::Int, order::Int; levels=2, nvars=[], stat=true)
         states = Vector{Vector{Float64}}(undef, num)
         states[1] = randn(order)
         for i in 2:num
-            states[i] = insert!(states[i-1][1:end-1], 1, data[level][i]'states[i-1])
-            states[i][1] += sqrt(nvars[2])*randn()
+            states[i] = insert!(states[i-1][1:end-1], 1, rand(Distributions.Normal(data[level][i]'states[i-1], sqrt(nvars[2])), 1)[1])
         end
         push!(data, states)
     end
