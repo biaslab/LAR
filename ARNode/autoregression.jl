@@ -44,12 +44,6 @@ mutable struct Autoregression <: SoftFactor
     end
 end
 
-# function AR(θ::Variable, x::Variable, γ::Variable)
-#     y = Variable()
-#     Autoregression(y, θ, x, γ)
-#     return y
-# end
-
 slug(::Type{Autoregression}) = "AR"
 
 # Average energy functional
@@ -70,7 +64,6 @@ function averageEnergy(::Type{Autoregression},
     Vy = unsafeCov(marg_y)
     B1 = tr(mW*unsafeCov(marg_y)) + my'*mW*my - (mA*mx)'*mW*my - my'*mW*mA*mx + tr(S'*mW*S*Vx)
     B2 = mγ*tr(Vθ*Vx) + mγ*mθ'*Vx*mθ + tr(S'*mW*S*mx*mx') + mγ*mx'*Vθ*mx + mγ*mθ'*mx*mx'*mθ
-    #tmp = -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b])) - 0.5*(1-order)*log(tiny) + 0.5*order*log(2*pi) + 0.5*(B1 + B2)
     valid = -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b])) + 0.5*log(2*pi) + 0.5*mγ*(Vy[1]+(my[1])^2 - 2*mθ'*mx*my[1] + tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
 end
 

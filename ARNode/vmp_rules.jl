@@ -76,7 +76,7 @@ function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate
     mγ = unsafeMean(marg_γ)
     mV = transition(mγ, order)
     my = unsafeMean(marg_y)
-    D = inv(mA)*mV*inv(mA') - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + mγ*unsafeCov(marg_θ))*inv(mA)*mV*inv(mA')
+    D = inv(mA)*mV*inv(mA') - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + inv(mγ*unsafeCov(marg_θ)))*inv(mA)*mV*inv(mA')
     invDz = inv(mA)*my - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + mγ*unsafeCov(marg_θ))*inv(mA)*my
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=invDz, w=D)
 end
