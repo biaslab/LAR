@@ -52,38 +52,12 @@ end
     return x, v_θ1, θ1, v_x, θ2
 end
 
-# @model HAR(observations) = begin
-#     v_θ2 ~ InverseGamma(0.0001, 0.0001)
-#     θ_1 ~ Normal(0, 1)
-#     v_θ1 ~ InverseGamma(0.0001, 0.0001)
-#     θ_1 ~ Normal(0, 1)
-#     x = Vector(undef, length(observations))
-#     y = Vector(undef, length(observations))
-#     x[1] ~ Normal(0, 1)
-#     for i in 2:length(observations)
-#         x[i] ~ Normal(θ_1*x[i-1], sqrt(v_θ1))
-#         y[i] ~ Normal(x[i], 1)
-#     end
-#     return x, v_θ1, θ_1
-# end
-using Random
-
-# for i in 1:100000
-#     Random.seed!(i)
-#     coefs, states = generateHAR(500)
-#     if maximum(states) < 1000
-#         println(i)
-#         break
-#     end
-# end
 Random.seed!(4404)
 coefs, states = generateHAR(500)
 observations = [st + sqrt(2)*randn() for st in states]
 m_har = HAR(observations)
 
 chain = sample(m_har, SMC(), 1000)
-#chain1 = sample(m_ar, PG(10), 1000)
-#chain2 = sample(m_ar, HMC(0.1, 5), 1000)
 
 
 m_st = [mean(chain[Symbol("x[$i]")])[2][1] for i in 1:length(states)]
@@ -98,5 +72,3 @@ plot!(m_st)
 
 plot(coefs, xlims=(1, 200))
 plot!(m_θ)
-
-var(m_st)
