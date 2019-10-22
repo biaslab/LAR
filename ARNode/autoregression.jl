@@ -67,12 +67,13 @@ function averageEnergy(::Type{Autoregression},
     valid = -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b])) + 0.5*log(2*pi) + 0.5*mγ*(Vy[1]+(my[1])^2 - 2*mθ'*mx*my[1] + tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
 end
 
+# This is really dirty, but this is the only way to compute FE for meanfield assumption now
 function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) where F<:Gaussian
 
 
     distAR = convert(ProbabilityDistribution{Multivariate, GaussianMeanVariance}, dist)
     dim = size((distAR.params[:v]))[1]
-    if dim > 1 && sum(distAR.params[:v][2:dim]) < (dim-1)*1.0e-12
+    if dim > 1 && sum(distAR.params[:v][2:dim]) < (dim-1)*tiny
         return 0.5*log(det(distAR.params[:v][1])) + (1/2)*log(2*pi) + (1/2)
     else
         return 0.5*log(det(unsafeCov(dist))) + (dims(dist)/2)*log(2*pi) + (dims(dist)/2)
