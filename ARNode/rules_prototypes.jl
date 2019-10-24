@@ -19,6 +19,8 @@
                       :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, ProbabilityDistribution, Nothing),
                       :name          => VariationalARIn3PPPN)
 
+# Structured
+
 @structuredVariationalRule(:node_type     => Autoregression,
                            :outbound_type => Message{GaussianMeanVariance},
                            :inbound_types => (Nothing, Message{Gaussian}, ProbabilityDistribution, ProbabilityDistribution),
