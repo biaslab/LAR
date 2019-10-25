@@ -109,10 +109,10 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate
     Message(Gamma, a=3/2, b=B/2)
 end
 
-function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate, PointMass},
+function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{V, PointMass},
                                   marg_x :: ProbabilityDistribution{Multivariate, PointMass},
                                   marg_θ :: Nothing,
-                                  marg_γ :: ProbabilityDistribution{Univariate})
+                                  marg_γ :: ProbabilityDistribution{Univariate}) where V<:VariateType
     my = unsafeMean(marg_y)
     order == Nothing ? defineOrder(length(my)) : order != length(my) ?
                        defineOrder(length(my)) : order
@@ -123,17 +123,19 @@ function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate
     Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
 end
 
-function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate, PointMass},
+function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{V, PointMass},
                                   marg_x :: ProbabilityDistribution{Multivariate, PointMass},
                                   marg_θ :: ProbabilityDistribution{Multivariate},
-                                  marg_γ :: Nothing)
+                                  marg_γ :: Nothing) where V<:VariateType
     mθ = unsafeMean(marg_θ)
     my = unsafeMean(marg_y)
     mx = unsafeMean(marg_x)
     Vθ = unsafeCov(marg_θ)
-    B = my[1]*my[1] - 2*my[1]*mθ'*mx + mx'*Vθ*mx + mθ'*mx*mx'*mθ
+    B = my[1]*my[1] - 2*my[1]*mθ'*mx + mx'*(Vθ+mθ'mθ)*mx
     Message(Gamma, a=3/2, b=B/2)
 end
+
+# No copying behavior (classical AR)
 
 function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Univariate, PointMass},
                                   marg_x :: ProbabilityDistribution{Multivariate, PointMass},
@@ -161,7 +163,7 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Univariate, 
     Message(Gamma, a=3/2, b=B/2)
 end
 
-# Structured updated
+# Structured updates
 
 function ruleSVariationalAROutNPPP(marg_y :: Nothing,
                                    msg_x :: Message{F, Multivariate},

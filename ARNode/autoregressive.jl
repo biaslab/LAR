@@ -46,9 +46,9 @@ end
 
 slug(::Type{Autoregressive}) = "AR"
 
-# Average energy functional
+# Average energy functional can' be computed for AR node when copying operator is used
 function averageEnergy(::Type{Autoregressive},
-                       marg_y::ProbabilityDistribution{Multivariate},
+                       marg_y::ProbabilityDistribution{Univariate},
                        marg_θ::ProbabilityDistribution{Multivariate},
                        marg_x::ProbabilityDistribution{Multivariate},
                        marg_γ::ProbabilityDistribution{Univariate})
@@ -65,17 +65,4 @@ function averageEnergy(::Type{Autoregressive},
     B1 = tr(mW*unsafeCov(marg_y)) + my'*mW*my - (mA*mx)'*mW*my - my'*mW*mA*mx + tr(S'*mW*S*Vx)
     B2 = mγ*tr(Vθ*Vx) + mγ*mθ'*Vx*mθ + tr(S'*mW*S*mx*mx') + mγ*mx'*Vθ*mx + mγ*mθ'*mx*mx'*mθ
     valid = -0.5*(digamma(marg_γ.params[:a]) - log(marg_γ.params[:b])) + 0.5*log(2*pi) + 0.5*mγ*(Vy[1]+(my[1])^2 - 2*mθ'*mx*my[1] + tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
-end
-
-# This is really dirty, but this is the only way to compute FE for meanfield assumption now
-function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) where F<:Gaussian
-
-
-    distAR = convert(ProbabilityDistribution{Multivariate, GaussianMeanVariance}, dist)
-    dim = size((distAR.params[:v]))[1]
-    if dim > 1 && sum(distAR.params[:v][2:dim]) < (dim-1)*tiny
-        return 0.5*log(det(distAR.params[:v][1])) + (1/2)*log(2*pi) + (1/2)
-    else
-        return 0.5*log(det(unsafeCov(dist))) + (dims(dist)/2)*log(2*pi) + (dims(dist)/2)
-    end
 end
