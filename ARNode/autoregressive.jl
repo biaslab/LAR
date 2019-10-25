@@ -4,7 +4,7 @@ import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!
                   averageEnergy, Interface, Variable, slug, ProbabilityDistribution,
                   differentialEntropy
 import SpecialFunctions: polygamma, digamma
-export Autoregression, AR, averageEnergy, slug, differentialEntropy
+export Autoregressive, AR, averageEnergy, slug, differentialEntropy
 
 """
 Description:
@@ -25,14 +25,14 @@ Interfaces:
 
 Construction:
 
-    Autoregression(out, θ, in, γ, id=:some_id)
+    Autoregressive(out, θ, in, γ, id=:some_id)
 """
-mutable struct Autoregression <: SoftFactor
+mutable struct Autoregressive <: SoftFactor
     id::Symbol
     interfaces::Vector{Interface}
     i::Dict{Symbol,Interface}
 
-    function Autoregression(y, θ, x, γ; id=generateId(Autoregression))
+    function Autoregressive(y, θ, x, γ; id=generateId(Autoregressive))
         @ensureVariables(y, x, θ, γ)
         self = new(id, Array{Interface}(undef, 4), Dict{Symbol,Interface}())
         addNode!(currentGraph(), self)
@@ -44,10 +44,10 @@ mutable struct Autoregression <: SoftFactor
     end
 end
 
-slug(::Type{Autoregression}) = "AR"
+slug(::Type{Autoregressive}) = "AR"
 
 # Average energy functional
-function averageEnergy(::Type{Autoregression},
+function averageEnergy(::Type{Autoregressive},
                        marg_y::ProbabilityDistribution{Multivariate},
                        marg_θ::ProbabilityDistribution{Multivariate},
                        marg_x::ProbabilityDistribution{Multivariate},

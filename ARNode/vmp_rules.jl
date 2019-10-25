@@ -135,6 +135,32 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Multivariate
     Message(Gamma, a=3/2, b=B/2)
 end
 
+function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Univariate, PointMass},
+                                  marg_x :: ProbabilityDistribution{Multivariate, PointMass},
+                                  marg_θ :: Nothing,
+                                  marg_γ :: ProbabilityDistribution{Univariate})
+    my = unsafeMean(marg_y)
+    order == Nothing ? defineOrder(length(my)) : order != length(my) ?
+                       defineOrder(length(my)) : order
+    mx = unsafeMean(marg_x)
+    mγ = unsafeMean(marg_γ)
+    W =  mγ*mx*mx'
+    xi = (mγ*mx*my)
+    Message(Multivariate, GaussianWeightedMeanPrecision, xi=xi, w=W)
+end
+
+function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{Univariate, PointMass},
+                                  marg_x :: ProbabilityDistribution{Multivariate, PointMass},
+                                  marg_θ :: ProbabilityDistribution{Multivariate},
+                                  marg_γ :: Nothing)
+    mθ = unsafeMean(marg_θ)
+    my = unsafeMean(marg_y)
+    mx = unsafeMean(marg_x)
+    Vθ = unsafeCov(marg_θ)
+    B = my[1]*my[1] - 2*my[1]*mθ'*mx + mx'*Vθ*mx + mθ'*mx*mx'*mθ
+    Message(Gamma, a=3/2, b=B/2)
+end
+
 # Structured updated
 
 function ruleSVariationalAROutNPPP(marg_y :: Nothing,

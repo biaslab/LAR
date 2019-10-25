@@ -23,7 +23,7 @@ function buildGraphAR(ARorder)
                                          placeholder(:w_x_t_prev, dims=(ARorder, ARorder)))
 
     @RV γ ~ Gamma(placeholder(:a_w_t), placeholder(:b_w_t))
-    @RV x_t ~ Autoregression(θ, x_t_prev, γ)
+    @RV x_t ~ Autoregressive(θ, x_t_prev, γ)
     c = zeros(ARorder); c[1] = 1;
     @RV y_t ~ GaussianMeanPrecision(dot(c, x_t), placeholder(:w_y_t))
 
