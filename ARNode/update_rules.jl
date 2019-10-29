@@ -10,6 +10,9 @@ export ruleVariationalAROutNPPP,
        ruleSVariationalARIn2PPNP,
        ruleSVariationalARIn3PPPN,
        ruleMGaussianMeanVarianceGGGD,
+       ruleSPAutoregressiveOutNGPP,
+       ruleSPAutoregressiveIn1GNPP,
+       ruleSPAutoregressiveIn1PNPP,
        uvector,
        shift,
        wMatrix
@@ -268,4 +271,36 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     W = [inv(b_Vy)+mW -mW*mA; -mA'*mW D+mA'*mW*mA]
     m = inv(W)*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
     return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=inv(W))
+end
+
+# Sum-product rules
+
+function ruleSPAutoregressiveOutNGPP(msg_y::Nothing,
+                                     msg_θ::Message{F, V},
+                                     msg_x::Message{PointMass},
+                                     msg_γ::Message{PointMass}) where {F<:Gaussian, V<:VariateType}
+    θ = convert(ProbabilityDistribution{V, GaussianMeanVariance}, msg_x.dist)
+    x = msg_x.dist.params[:m]
+    Message(V, GaussianMeanVariance, m=x'*θ.params[:m], v=x'*θ.params[:v]*x + inv(msg_γ.dist.params[:m]))
+end
+
+
+
+function ruleSPAutoregressiveIn1GNPP(msg_y::Message{F, V},
+                                     msg_θ::Nothing,
+                                     msg_x::Message{PointMass},
+                                     msg_γ::Message{PointMass}) where {F<:Gaussian, V<:VariateType}
+
+    y = convert(ProbabilityDistribution{V, GaussianMeanVariance}, msg_y.dist)
+    x = msg_x.dist.params[:m]
+    Message(V, GaussianMeanVariance, m=pinv(x)'*y.params[:m], v=pinv(x)'*(inv(msg_γ.dist.params[:m]) + y.params[:v])*pinv(x))
+end
+
+function ruleSPAutoregressiveIn1PNPP(msg_y::Message{PointMass},
+                                     msg_θ::Nothing,
+                                     msg_x::Message{PointMass},
+                                     msg_γ::Message{PointMass})
+    my = msg_y.dist.params[:m]
+    x = msg_x.dist.params[:m]
+    Message(Multivariate, GaussianMeanPrecision, m=pinv(x)'*my, w=x*msg_γ.dist.params[:m]*x')
 end

@@ -44,3 +44,19 @@
 @marginalRule(:node_type => Autoregressive,
               :inbound_types => (Message{Gaussian}, Message{Gaussian}, ProbabilityDistribution, ProbabilityDistribution),
               :name => MGaussianMeanVarianceGGGD)
+
+# Sum-product messages
+@sumProductRule(:node_type     => Autoregressive,
+              :outbound_type => Message{GaussianMeanVariance},
+              :inbound_types => (Nothing, Message{Gaussian}, Message{PointMass}, Message{PointMass}),
+              :name          => SPAutoregressiveOutNGPP)
+
+@sumProductRule(:node_type     => Autoregressive,
+              :outbound_type => Message{GaussianMeanVariance},
+              :inbound_types => (Message{Gaussian}, Nothing, Message{PointMass}, Message{PointMass}),
+              :name          => SPAutoregressiveIn1GNPP)
+
+@sumProductRule(:node_type     => Autoregressive,
+              :outbound_type => Message{GaussianMeanVariance},
+              :inbound_types => (Message{PointMass}, Nothing, Message{PointMass}, Message{PointMass}),
+              :name          => SPAutoregressiveIn1PNPP)
