@@ -51,8 +51,23 @@ function generate_coefficients(order::Int)
     return true_a
 end
 
+function generateSWAR(num::Int, order::Int; nvar=1, pi=0.5)
+    coefs1 = generate_coefficients(order)
+    coefs2 = generate_coefficients(order)
+    inits = randn(order)
+    data = Vector{Vector{Float64}}(undef, num+3*order)
+    data[1] = inits
+    _pis = []
+    for i in 2:num+3*order
+        push!(_pis, rand(Distributions.Bernoulli(pi)))
+        coefs = _pis[end] == 1 ? coefs1 : coefs2
+        data[i] = insert!(data[i-1][1:end-1], 1, rand(Distributions.Normal(coefs'data[i-1], sqrt(nvar)), 1)[1])
+    end
+    data = data[1+3*order:end]
+    return coefs1, coefs2, _pis, data
+end
+
 function generateAR(num::Int, order::Int; nvar=1, stat=true, coefs=nothing)
-    d = Normal()
     if isnothing(coefs) && stat
         coefs = generate_coefficients(order)
     else
