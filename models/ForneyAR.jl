@@ -7,8 +7,8 @@ using ProgressMeter
 using ForneyLab
 using Random
 using LinearAlgebra
-include( "../ARnode/ARNode.jl")
-using .ARNode
+include( "../module/autoregressive.jl")
+using .AR
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 export buildGraphAR, inferAR
@@ -36,7 +36,7 @@ function buildGraphAR(ARorder)
     return graph, q
 end
 
-function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, priors::Dict=Dict(), r_stats=false)
+function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, priors::Dict=Dict())
 
     # Define values for prior statistics
     if length(priors) == 6
@@ -73,13 +73,6 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
 
     marginals = Dict()
 
-    if r_stats
-        F = Vector{Float64}(undef, length(observations))
-        F_iter = Vector{Array{Float64, 1}}(undef, length(observations))
-        algoF = freeEnergyAlgorithm()
-        eval(Meta.parse(algoF))
-    end
-
     algo = variationalAlgorithm(r_factorization)
     eval(Meta.parse(algo))
 
@@ -89,7 +82,6 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
         marginals[:θ] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_θ_t_min, w=w_θ_t_min)
         marginals[:x_t_prev] = ProbabilityDistribution(Multivariate, GaussianMeanPrecision, m=m_x_t_prev_min, w=w_x_t_prev_min)
         marginals[:γ] = ProbabilityDistribution(Univariate, Gamma, a=a_w_t_min, b=b_w_t_min)
-        if @isdefined(F); f = Vector{Float64}(undef, vmp_iter) end
         for i = 1:vmp_iter
             data = Dict(:y_t => observations[t],
                         :w_y_t => obs_noise_var^-1,
@@ -115,23 +107,11 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
             w_x_t_prev_min = w_x_prev[t]
             a_w_t_min = a_w[t]
             b_w_t_min = b_w[t]
-            if @isdefined(F); f[i] = Base.invokelatest(freeEnergy, data, marginals) end
-        end
-        if @isdefined(F)
-            F_iter[t] = f
-            F[t] = F_iter[t][end]
         end
     end
-
-    if r_stats
-        return marginals, F_iter, F,
-               Dict(:m_x=>m_x_prev,
-                    :w_x=>w_x_prev,
-                    :m_θ=>m_θ, :w_θ=>w_θ,
-                    :a=>a_w, :b=>b_w)
-    else
-        return marginals
-    end
+    return marginals,
+           Dict(:m_x=>m_x_prev, :w_x=>w_x_prev,
+                :m_θ=>m_θ, :w_θ=>w_θ, :a=>a_w, :b=>b_w)
 end
 
 end  # module ARFFG
