@@ -10,9 +10,6 @@ export ruleVariationalAROutNPPP,
        ruleSVariationalARIn2PPNP,
        ruleSVariationalARIn3PPPN,
        ruleMGaussianMeanVarianceGGGD,
-       ruleSPAutoregressiveOutNGPP,
-       ruleSPAutoregressiveIn1GNPP,
-       ruleSPAutoregressiveIn1PNPP,
        uvector,
        shift,
        wMatrix
@@ -63,9 +60,10 @@ function ruleVariationalAROutNPPP(marg_y :: Nothing,
     order == Nothing ? defineOrder(length(mθ)) : order != length(mθ) ?
                        defineOrder(length(mθ)) : order
     mA = S+c*mθ'
+    mγ = unsafeMean(marg_γ)
     m = mA*unsafeMean(marg_x)
-    W = wMatrix(unsafeMean(marg_γ), order)
-    Message(Multivariate, GaussianWeightedMeanPrecision, xi=W*m, w=W)
+    V = transition(mγ, order)
+    Message(Multivariate, GaussianMeanVariance, m=m, v=V)
 end
 
 function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate},
@@ -79,9 +77,10 @@ function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{Multivariate
     mγ = unsafeMean(marg_γ)
     mV = transition(mγ, order)
     my = unsafeMean(marg_y)
-    D = inv(mA)*mV*inv(mA') - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + inv(mγ*unsafeCov(marg_θ)))*inv(mA)*mV*inv(mA')
-    invDz = inv(mA)*my - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + mγ*unsafeCov(marg_θ))*inv(mA)*my
-    Message(Multivariate, GaussianWeightedMeanPrecision, xi=invDz, w=D)
+    mW = wMatrix(unsafeMean(marg_γ), order)
+    invD = inv(mA)*mV*inv(mA') - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + inv(mγ*unsafeCov(marg_θ)))*inv(mA)*mV*inv(mA')
+    invDm = inv(mA)*my - inv(mA)*mV*inv(mA')*inv(inv(mA)*mV*inv(mA') + inv(mγ*unsafeCov(marg_θ)))*inv(mA)*my
+    Message(Multivariate, GaussianMeanVariance, m=invDm, v=invD)
 end
 
 function ruleVariationalARIn2PPNP(marg_y :: ProbabilityDistribution{Multivariate},
@@ -271,36 +270,4 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     W = [inv(b_Vy)+mW -mW*mA; -mA'*mW D+mA'*mW*mA]
     m = inv(W)*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
     return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=inv(W))
-end
-
-# Sum-product rules
-
-function ruleSPAutoregressiveOutNGPP(msg_y::Nothing,
-                                     msg_θ::Message{F, V},
-                                     msg_x::Message{PointMass},
-                                     msg_γ::Message{PointMass}) where {F<:Gaussian, V<:VariateType}
-    θ = convert(ProbabilityDistribution{V, GaussianMeanVariance}, msg_x.dist)
-    x = msg_x.dist.params[:m]
-    Message(V, GaussianMeanVariance, m=x'*θ.params[:m], v=x'*θ.params[:v]*x + inv(msg_γ.dist.params[:m]))
-end
-
-
-
-function ruleSPAutoregressiveIn1GNPP(msg_y::Message{F, V},
-                                     msg_θ::Nothing,
-                                     msg_x::Message{PointMass},
-                                     msg_γ::Message{PointMass}) where {F<:Gaussian, V<:VariateType}
-
-    y = convert(ProbabilityDistribution{V, GaussianMeanVariance}, msg_y.dist)
-    x = msg_x.dist.params[:m]
-    Message(V, GaussianMeanVariance, m=pinv(x)'*y.params[:m], v=pinv(x)'*(inv(msg_γ.dist.params[:m]) + y.params[:v])*pinv(x))
-end
-
-function ruleSPAutoregressiveIn1PNPP(msg_y::Message{PointMass},
-                                     msg_θ::Nothing,
-                                     msg_x::Message{PointMass},
-                                     msg_γ::Message{PointMass})
-    my = msg_y.dist.params[:m]
-    x = msg_x.dist.params[:m]
-    Message(Multivariate, GaussianMeanPrecision, m=pinv(x)'*my, w=x*msg_γ.dist.params[:m]*x')
 end
