@@ -4,7 +4,7 @@ import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!
                   averageEnergy, Interface, Variable, slug, ProbabilityDistribution,
                   differentialEntropy, unsafeLogMean, unsafeMean, unsafeCov, unsafePrecision, unsafeMeanCov
 import SpecialFunctions: polygamma, digamma
-export Autoregressive, AR, averageEnergy, slug, differentialEntropy, tinyAR
+export Autoregressive, AR, averageEnergy, slug
 
 """
 Description:
@@ -27,8 +27,6 @@ Construction:
 
     Autoregressive(out, θ, in, γ, id=:some_id)
 """
-
-const tinyAR = 1.0e-24
 
 mutable struct Autoregressive <: SoftFactor
     id::Symbol
