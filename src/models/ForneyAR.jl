@@ -1,8 +1,6 @@
 # Unknown process and known measurement noises (UPKM)
 # joint estimations of x, θ and γ (process noise)
 
-module ForneyAR
-
 using ProgressMeter
 using ForneyLab
 using Random
@@ -111,5 +109,3 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
            Dict(:m_x=>m_x_prev, :w_x=>w_x_prev,
                 :m_θ=>m_θ, :w_θ=>w_θ, :a=>a_w, :b=>b_w)
 end
-
-end  # module ARFFG
