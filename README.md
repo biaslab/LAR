@@ -11,8 +11,6 @@ There are [demos](https://github.com/biaslab/VMP-AR/tree/master/demo) available 
 
 How to connect AR-node to ForneyLab
 ===============
-Super easy: just add these two lines to your code
 ```julia
-include( "../module/autoregressive.jl")
-using .AR
+Pkg.dev("https://github.com/biaslab/FLAR.git")
 ```

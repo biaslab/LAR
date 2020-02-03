@@ -7,8 +7,6 @@ using ProgressMeter
 using ForneyLab
 using Random
 using LinearAlgebra
-include( "../module/autoregressive.jl")
-using .AR
 import ForneyLab: unsafeCov, unsafeMean, unsafePrecision
 
 export buildGraphAR, inferAR
