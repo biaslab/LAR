@@ -1,4 +1,4 @@
-module FLAR
+module LAR
 
 include("helpers.jl")
 include("DataAR.jl")
@@ -8,4 +8,4 @@ using .AR
 
 include("models/ForneyAR.jl")
 
-end  # module FLAR
+end  # module LAR

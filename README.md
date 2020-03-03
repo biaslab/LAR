@@ -12,5 +12,5 @@ There are [demos](https://github.com/biaslab/VMP-AR/tree/master/demo) available 
 How to connect AR-node to ForneyLab
 ===============
 ```julia
-Pkg.clone("https://github.com/biaslab/FLAR.git")
+Pkg.clone("https://github.com/biaslab/LAR.git")
 ```
