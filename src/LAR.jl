@@ -2,9 +2,9 @@ module LAR
 
 include("helpers.jl")
 include("ar_data.jl")
-using .DataAR
+using .Data
 include("autoregressive.jl")
-using .AR
+using .Node
 
 include("models/ForneyAR.jl")
 

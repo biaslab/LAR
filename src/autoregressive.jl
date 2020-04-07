@@ -1,7 +1,7 @@
-module AR
+module Node
 
-include("node.jl")
-include("rules_prototypes.jl")
-include("update_rules.jl")
+include("ar_node.jl")
+include("ar_rules_prototypes.jl")
+include("ar_update_rules.jl")
 
 end  # module ARnode

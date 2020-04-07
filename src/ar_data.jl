@@ -1,4 +1,4 @@
-module DataAR
+module Data
 
 using CSV
 using DataFrames
