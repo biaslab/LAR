@@ -1,7 +1,7 @@
 module LAR
 
 include("helpers.jl")
-include("DataAR.jl")
+include("ar_data.jl")
 using .DataAR
 include("autoregressive.jl")
 using .AR
