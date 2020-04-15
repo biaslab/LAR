@@ -49,8 +49,8 @@ slug(::Type{Autoregressive}) = "AR"
 
 function averageEnergy(::Type{Autoregressive},
                        marg_y::ProbabilityDistribution{Multivariate},
-                       marg_θ::ProbabilityDistribution{Multivariate},
                        marg_x::ProbabilityDistribution{Multivariate},
+                       marg_θ::ProbabilityDistribution{Multivariate},
                        marg_γ::ProbabilityDistribution{Univariate})
     mθ, Vθ = unsafeMeanCov(marg_θ)
     my, Vy = unsafeMeanCov(marg_y)
