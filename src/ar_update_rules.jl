@@ -245,7 +245,7 @@ function ruleSVariationalARIn3PPPN(marg_xy :: ProbabilityDistribution{Multivaria
     Vy = marg_xy.params[:v][1:order,1:order]
     Vx = marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
-    B = (Vy + my*my')[1, 1] + 2*(mA*(Vxy + mx*my'))[1, 1] + (mA*(Vx + mx*mx')*mA')[1, 1] + (Vθ*(Vx + mx*mx'))[1, 1]
+    B = (Vy + my*my')[1, 1] - 2*(mA*(Vxy + mx*my'))[1, 1] + (mA*(Vx + mx*mx')*mA')[1, 1] + (Vθ*(Vx + mx*mx'))[1, 1]
     Message(Gamma, a=3/2, b=B)
 end
 
