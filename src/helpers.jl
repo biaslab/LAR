@@ -1,6 +1,6 @@
 mse(x, y) = sum((x - y).^2)/length(y)
 
-logPDF(mx, x, vx) = -0.5*log(2*pi*vx) - ((mx - x)^2)/(2 * vx)
+logPDF(mx, x, vx) = log(vx) + ((mx - x)^2)/(vx)
 
 function wmse(mx, x, vx)
     T = length(x)

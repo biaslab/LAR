@@ -91,19 +91,19 @@ function inferAR(r_factorization, observations, obs_noise_var; vmp_iter=5, prior
             Base.invokelatest(stepΘ!, data, marginals)
             Base.invokelatest(stepΓ!, data, marginals)
             Base.invokelatest(stepX_t_prev!, data, marginals)
-            m_θ[t] = unsafeMean(marginals[:θ])
-            w_θ[t] = unsafePrecision(marginals[:θ])
-            m_x_prev[t] = unsafeMean(marginals[:x_t])
-            w_x_prev[t] = unsafePrecision(marginals[:x_t])
-            a_w[t] = marginals[:γ].params[:a]
-            b_w[t] = marginals[:γ].params[:b]
-            m_θ_t_min = m_θ[t]
-            w_θ_t_min = w_θ[t]
-            m_x_t_prev_min = m_x_prev[t]
-            w_x_t_prev_min = w_x_prev[t]
-            a_w_t_min = a_w[t]
-            b_w_t_min = b_w[t]
         end
+        m_θ[t] = unsafeMean(marginals[:θ])
+        w_θ[t] = unsafePrecision(marginals[:θ])
+        m_x_prev[t] = unsafeMean(marginals[:x_t])
+        w_x_prev[t] = unsafePrecision(marginals[:x_t])
+        a_w[t] = marginals[:γ].params[:a]
+        b_w[t] = marginals[:γ].params[:b]
+        m_θ_t_min = m_θ[t]
+        w_θ_t_min = w_θ[t]
+        m_x_t_prev_min = m_x_prev[t]
+        w_x_t_prev_min = w_x_prev[t]
+        a_w_t_min = a_w[t]
+        b_w_t_min = b_w[t]
     end
     return marginals,
            Dict(:m_x=>m_x_prev, :w_x=>w_x_prev,
