@@ -19,7 +19,7 @@ end
 function loadAR(filepath::String; col, delim=',')
     df = CSV.File(filepath, delim=delim) |> DataFrame
     x = []
-    df = DataFrame(value=df[col])
+    df = DataFrame(value=df[!, col])
     # Data
     for i in range(1, stop=size(df, 1))
         if typeof(df[i, 1]) == String && FloatParse(df[i, 1])
