@@ -4,7 +4,7 @@ import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!
                   averageEnergy, Interface, Variable, slug, ProbabilityDistribution,
                   differentialEntropy, unsafeLogMean, unsafeMean, unsafeCov, unsafePrecision, unsafeMeanCov
 import SpecialFunctions: polygamma, digamma
-export Autoregressive, AR, averageEnergy, slug
+export Autoregressive, AR, averageEnergy, slug, differentialEntropy
 
 """
 Description:
@@ -75,4 +75,19 @@ function averageEnergy(::Type{Autoregressive},
     -0.5*(unsafeLogMean(marg_γ)) +
     0.5*log(2*pi) + 0.5*mγ*(Vy1+my1^2 - 2*mθ'*(Vyx[1,order+1:2*order] + mx*my1) +
     tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
+end
+
+# NOTE: To automate fe computations for AR node we need to overwrite the following functions
+function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) where F<:Gaussian
+    order = dims(dist)
+    Σ = unsafeCov(dist)
+    if sum(diag(Σ)[2:end]) == (order-1)*tiny
+        return  0.5*log(Σ[1]) +
+                0.5*log(2*pi) +
+                0.5
+    else
+        return  0.5*log(det(unsafeCov(dist))) +
+                (order/2)*log(2*pi) +
+                (order/2)
+    end
 end
