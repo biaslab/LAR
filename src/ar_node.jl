@@ -78,13 +78,16 @@ function averageEnergy(::Type{Autoregressive},
 end
 
 # NOTE: To automate fe computations for AR node we need to overwrite the following functions
+# TODO: Extend for handling the issue of marginal differentialEntropy
 function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) where F<:Gaussian
     order = dims(dist)
     Σ = unsafeCov(dist)
+    # meanfield
     if sum(diag(Σ)[2:end]) == (order-1)*tiny
         return  0.5*log(Σ[1]) +
                 0.5*log(2*pi) +
                 0.5
+    # structured else if
     else
         return  0.5*log(det(unsafeCov(dist))) +
                 (order/2)*log(2*pi) +
