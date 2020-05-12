@@ -52,6 +52,7 @@ function ruleVariationalAROutNPPP(marg_y :: Nothing,
                                   marg_γ :: ProbabilityDistribution{Univariate}) where V<:VariateType
     mθ = unsafeMean(marg_θ)
     c, S = defineCS(length(mθ))
+    # The user can specify AR(1) as Multivariate distribution
     if V == Multivariate
         mθ = S+c*mθ'
         mW = wMatrix(unsafeMean(marg_γ), length(c))
@@ -69,6 +70,7 @@ function ruleVariationalARIn1PNPP(marg_y :: ProbabilityDistribution{V},
     mθ, Vθ = unsafeMeanCov(marg_θ)
     my = unsafeMean(marg_y)
     c, S = defineCS(length(mθ))
+    # The user can specify AR(1) as Multivariate distribution
     if V == Multivariate
         mθ = S+c*mθ'
         mW = wMatrix(unsafeMean(marg_γ), length(c))
@@ -134,6 +136,7 @@ function ruleSVariationalARIn1PNPP(msg_y :: Message{F, V},
     mθ, Vθ = unsafeMeanCov(marg_θ)
     my, Vy = unsafeMeanCov(msg_y.dist)
     c, S = defineCS(length(mθ))
+    # The user can specify AR(1) as Multivariate distribution
     if V == Multivariate
         mθ = S+c*mθ'
         mV = transition(unsafeMean(marg_γ), length(c))
@@ -193,6 +196,7 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     mθ, Vθ = unsafeMeanCov(dist_θ)
     my, Vy = unsafeMeanCov(msg_y.dist)
     c, S = defineCS(length(mθ))
+    # The user can specify AR(1) as Multivariate distribution
     if V == Multivariate
        mθ = S+c*mθ'
        mW = wMatrix(unsafeMean(marg_γ), length(c))
