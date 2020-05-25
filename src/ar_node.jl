@@ -104,7 +104,14 @@ function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) whe
         return  0.5*log(Σ[1]) +
                 0.5*log(2*pi) +
                 0.5
-    # structured else if
+    # elseif unsafeMean(dist)[2:div(order, 2)] == unsafeMean(dist)[div(order, 2)+1:order-1]
+    #     for _ in 2:div(order, 2)
+    #         Σ = Σ[1:end .!= 2, 1:end .!= 2]
+    #     end
+    #     dist.params[:v] = Σ
+    #     return  0.5*log(det(unsafeCov(dist))) +
+    #             (order/2)*log(2*pi) +
+    #             (order/2)
     else
         return  0.5*log(det(unsafeCov(dist))) +
                 (order/2)*log(2*pi) +

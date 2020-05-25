@@ -21,6 +21,7 @@ function wMatrix(γ, order)
 end
 
 function transition(γ, order)
+    #V = Matrix{Float64}(I, order, order)
     V = zeros(order, order)
     V[1] = 1/γ
     return V
@@ -158,9 +159,10 @@ function ruleSVariationalARIn2PPNP(marg_xy :: ProbabilityDistribution{Multivaria
     my, Vy = marg_xy.params[:m][1:order], marg_xy.params[:v][1:order,1:order]
     mx, Vx = marg_xy.params[:m][order+1:end], marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
+    mγ = unsafeMean(marg_γ)
 
-    D = unsafeMean(marg_γ)*(Vx + mx*mx')
-    mθ, Vθ = inv(D)*(Vxy + mx*my')*c, inv(D)
+    D = mγ*(Vx + mx*mx')
+    mθ, Vθ = inv(D)*(Vxy + mx*my')*wMatrix(mγ, order)*c, inv(D)
 
     # Check if parameters are of Array type
     V = Multivariate
@@ -179,13 +181,13 @@ function ruleSVariationalARIn3PPPN(marg_xy :: ProbabilityDistribution{V1},
     c, S = defineCS(div(length(marg_xy.params[:m]), 2))
     order = length(c)
 
-    mθ, Vθ = V2 == Multivariate ? S+c*mθ' : unsafeMean(marg_θ), unsafeCov(marg_θ)
+    mθ, Vθ = V2 == Multivariate ? S+c*unsafeMean(marg_θ)' : unsafeMean(marg_θ), unsafeCov(marg_θ)
     my, Vy = marg_xy.params[:m][1:order], marg_xy.params[:v][1:order,1:order]
     mx, Vx = marg_xy.params[:m][order+1:end], marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
 
     B = (Vy + my*my')[1, 1] - 2*(mθ*(Vxy + mx*my'))[1, 1] + (mθ*(Vx + mx*mx')*mθ')[1, 1] + (Vθ*(Vx + mx*mx'))[1, 1]
-    Message(Gamma, a=3/2, b=B)
+    Message(Gamma, a=3/2, b=B/2)
 end
 
 function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
@@ -194,12 +196,11 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
                                        dist_γ::ProbabilityDistribution) where {F1<:Gaussian, F2<:Gaussian, V<:VariateType}
 
     mθ, Vθ = unsafeMeanCov(dist_θ)
-    my, Vy = unsafeMeanCov(msg_y.dist)
     c, S = defineCS(length(mθ))
     # The user can specify AR(1) as Multivariate distribution
     if V == Multivariate
        mθ = S+c*mθ'
-       mW = wMatrix(unsafeMean(marg_γ), length(c))
+       mW = wMatrix(unsafeMean(dist_γ), length(c))
     else
        mW = unsafeMean(dist_γ)
     end
@@ -214,3 +215,36 @@ function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
     m = inv(W)*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
     return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=inv(W))
 end
+
+# NOTE: This function is not safe for AR > 1
+# function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
+#                                        msg_x::Message{F2, V},
+#                                        dist_θ::ProbabilityDistribution,
+#                                        dist_γ::ProbabilityDistribution) where {F1<:Gaussian, F2<:Gaussian, V<:VariateType}
+#
+#     mθ, Vθ = unsafeMeanCov(dist_θ)
+#     c, S = defineCS(length(mθ))
+#     # The user can specify AR(1) as Multivariate distribution
+#     mγ = unsafeMean(dist_γ)
+#     if V == Multivariate
+#        mθ = S+c*mθ'
+#        mV = transition(mγ, length(c))
+#     else
+#        mV = inv(mγ)
+#     end
+#
+#     b_my = unsafeMean(msg_y.dist)
+#     b_Vy = unsafeCov(msg_y.dist)
+#     f_mx = unsafeMean(msg_x.dist)
+#     f_Vx = unsafeCov(msg_x.dist)
+#
+#     E = mV - mV*inv(b_Vy + mV)*mV
+#     F = mV + mV*inv(mθ)'*(inv(f_Vx) + mγ*Vθ)*inv(mθ)'*mV
+#     ABDC = E - E*inv(F + E)*E
+#     BD = -inv(mθ)' + inv(mθ)'*inv(inv(mθ)*mV*inv(mθ)' + inv((inv(f_Vx) + mγ*Vθ)))*inv(mθ)*mV*inv(mθ)'
+#     DC =  -inv(mθ) + inv(mθ)*mV*inv(mθ)'*inv(inv(mθ)*mV*inv(mθ)' + inv((inv(f_Vx) + mγ*Vθ)))*inv(mθ)
+#     D = inv(mθ)*mV*inv(mθ)' - inv(mθ)*mV*inv(mθ)'*inv(inv(mθ)*mV*inv(mθ)' + inv((inv(f_Vx) + mγ*Vθ)))*inv(mθ)*mV*inv(mθ)'
+#     invW = [ABDC -ABDC*BD; -DC*ABDC D+DC*ABDC*BD]
+#     m = invW*[inv(b_Vy)*b_my; inv(f_Vx)*f_mx]
+#     return ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=m, v=invW)
+# end
