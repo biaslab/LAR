@@ -6,7 +6,7 @@ import ForneyLab: SoftFactor, @ensureVariables, generateId, addNode!, associate!
                   unsafeMean, unsafeCov, unsafePrecision,
                   unsafeMeanCov, VariateType
 import SpecialFunctions: polygamma, digamma
-export Autoregressive, AR, averageEnergy, slug, differentialEntropy
+export Autoregressive, AR, averageEnergy, slug
 
 """
 Description:
@@ -85,36 +85,15 @@ function averageEnergy(::Type{Autoregressive},
 
     mθ, Vθ = unsafeMeanCov(marg_θ)
     order = length(mθ)
+    c, S = defineCS(order)
+    mθ = S+c*mθ'
     myx, Vyx = unsafeMeanCov(marg_y_x)
     mx, Vx = myx[order+1:end], Matrix(Vyx[order+1:2*order, order+1:2*order])
-    my1, Vy1 = myx[1:order][1], Matrix(Vyx[1:order, 1:order])[1]
+    my, Vy = myx[1:order], Matrix(Vyx[1:order, 1:order])
+    Vyx = Vyx[order+1:end,1:order]
     mγ = unsafeMean(marg_γ)
+    mW = transition(mγ, order)
     -0.5*(unsafeLogMean(marg_γ)) +
-    0.5*log(2*pi) + 0.5*mγ*(Vy1+my1^2 - 2*mθ'*(Vyx[1,order+1:2*order] + mx*my1) +
-    tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
-end
-
-# NOTE: To automate fe computations for AR node we need to overwrite the following functions
-# TODO: Extend for handling the issue of marginal differentialEntropy
-function differentialEntropy(dist::ProbabilityDistribution{Multivariate, F}) where F<:Gaussian
-    order = dims(dist)
-    Σ = unsafeCov(dist)
-    # meanfield
-    if sum(diag(Σ)[2:end]) == (order-1)*tiny
-        return  0.5*log(Σ[1]) +
-                0.5*log(2*pi) +
-                0.5
-    # elseif unsafeMean(dist)[2:div(order, 2)] == unsafeMean(dist)[div(order, 2)+1:order-1]
-    #     for _ in 2:div(order, 2)
-    #         Σ = Σ[1:end .!= 2, 1:end .!= 2]
-    #     end
-    #     dist.params[:v] = Σ
-    #     return  0.5*log(det(unsafeCov(dist))) +
-    #             (order/2)*log(2*pi) +
-    #             (order/2)
-    else
-        return  0.5*log(det(unsafeCov(dist))) +
-                (order/2)*log(2*pi) +
-                (order/2)
-    end
+    0.5*log(2*pi) + 0.5*tr(mW*(Vy+my*my' - (Vyx + my*mx')*mθ' - mθ*(Vyx' + mx*my') +
+    mθ*(Vx + mx*mx')*mθ' + c*(tr(Vθ*Vx) + mx'Vθ*mx)c'))
 end
