@@ -6,6 +6,4 @@ using .Data
 include("autoregressive.jl")
 using .Node
 
-include("models/ForneyAR.jl")
-
 end  # module LAR
