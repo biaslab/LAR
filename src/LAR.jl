@@ -1,6 +1,5 @@
 module LAR
 
-include("helpers.jl")
 include("ar_data.jl")
 using .Data
 include("autoregressive.jl")
