@@ -58,9 +58,15 @@ function averageEnergy(::Type{Autoregressive},
     my, Vy = unsafeMeanCov(marg_y)
     mx, Vx = unsafeMeanCov(marg_x)
     mγ = unsafeMean(marg_γ)
-    -0.5*(unsafeLogMean(marg_γ)) +
-    0.5*log(2*pi) + 0.5*mγ*(Vy[1]+(my[1])^2 - 2*mθ'*mx*my[1] +
+    my1, Vy1 = my[1], Vy[1]
+    AE = -0.5*(unsafeLogMean(marg_γ)) +
+    0.5*log(2*pi) + 0.5*mγ*(Vy1+my1^2 - 2*mθ'*mx*my1 +
     tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
+
+    # correction
+    AE += differentialEntropy(marg_y)
+    marg_y = ProbabilityDistribution(Univariate, GaussianMeanVariance, m=my1, v=Vy1)
+    AE -= differentialEntropy(marg_y)
 end
 
 function averageEnergy(::Type{Autoregressive},
@@ -85,15 +91,21 @@ function averageEnergy(::Type{Autoregressive},
 
     mθ, Vθ = unsafeMeanCov(marg_θ)
     order = length(mθ)
-    c, S = defineCS(order)
-    mθ = S+c*mθ'
     myx, Vyx = unsafeMeanCov(marg_y_x)
     mx, Vx = myx[order+1:end], Matrix(Vyx[order+1:2*order, order+1:2*order])
-    my, Vy = myx[1:order], Matrix(Vyx[1:order, 1:order])
-    Vyx = Vyx[order+1:end,1:order]
+    my1, Vy1 = myx[1], Vyx[1]
+    Vy1x = Vyx[1, order+1:end]
     mγ = unsafeMean(marg_γ)
-    mW = transition(mγ, order)
-    -0.5*(unsafeLogMean(marg_γ)) +
-    0.5*log(2*pi) + 0.5*tr(mW*(Vy+my*my' - (Vyx + my*mx')*mθ' - mθ*(Vyx' + mx*my') +
-    mθ*(Vx + mx*mx')*mθ' + c*(tr(Vθ*Vx) + mx'Vθ*mx)c'))
+    AE = -0.5*(unsafeLogMean(marg_γ)) +
+    0.5*log(2*pi) + 0.5*mγ*(Vy1+my1^2 - 2*mθ'*(Vy1x + mx*my1) +
+    tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
+
+    # correction
+    AE += differentialEntropy(marg_y_x)
+    for i in 2:order
+        myx = myx[1:end .!= i]
+        Vyx = Vyx[1:end .!= i, 1:end .!= i]
+    end
+    marg_y_x = ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=myx, v=Vyx)
+    AE -= differentialEntropy(marg_y_x)
 end
