@@ -21,7 +21,6 @@ function wMatrix(γ, order)
 end
 
 function transition(γ, order)
-    #V = Matrix{Float64}(I, order, order)
     V = zeros(order, order)
     V[1] = 1/γ
     return V
