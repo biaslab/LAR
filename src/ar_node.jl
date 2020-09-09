@@ -82,6 +82,11 @@ function averageEnergy(::Type{Autoregressive},
     -0.5*(unsafeLogMean(marg_γ)) +
     0.5*log(2*pi) + 0.5*mγ*(Vy1+my1^2 - 2*mθ'*(Vyx[3] + mx*my1) +
     tr(Vθ*Vx) + mx'*Vθ*mx + mθ'*(Vx + mx*mx')*mθ)
+
+    # correction
+    AE += differentialEntropy(marg_y_x)
+    marg_y_x = ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=myx, v=Vyx)
+    AE -= differentialEntropy(marg_y_x)
 end
 
 function averageEnergy(::Type{Autoregressive},
