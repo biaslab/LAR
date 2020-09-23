@@ -10,6 +10,7 @@ export ruleVariationalAROutNPPP,
        ruleSVariationalARIn2PPNP,
        ruleSVariationalARIn3PPPN,
        ruleMGaussianMeanVarianceGGGD,
+       ruleSVBGaussianMeanPrecisionMGVD,
        uvector,
        shift,
        wMatrix

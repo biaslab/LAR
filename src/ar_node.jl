@@ -114,18 +114,3 @@ function averageEnergy(::Type{Autoregressive},
     marg_y_x = ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=myx, v=Vyx)
     AE -= differentialEntropy(marg_y_x)
 end
-
-
-@symmetrical function prod!(
-    x::ProbabilityDistribution{Multivariate, F1},
-    y::ProbabilityDistribution{Univariate, F2},
-    z::ProbabilityDistribution{Multivariate, GaussianWeightedMeanPrecision}=ProbabilityDistribution(Multivariate, GaussianWeightedMeanPrecision, xi=[NaN], w=transpose([NaN]))) where {F1<:Gaussian, F2<:Gaussian}
-
-    if dims(x) == 1
-        z.params[:xi] = unsafeWeightedMean(x) + [unsafeWeightedMean(y)]
-        z.params[:w] = unsafePrecision(x) + [unsafePrecision(y)]
-        return z
-    else 
-        throw(DimensionMismatch([x, y]))
-    end
-end
