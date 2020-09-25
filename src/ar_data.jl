@@ -1,37 +1,9 @@
 module Data
 
-using CSV
-using DataFrames
 import PolynomialRoots.roots
 using Distributions
 
-export loadAR, generateAR, generateHAR, generateSIN, writeAR, readAR, generateHGFAR
-
-# Filter bad data
-FloatParse(x) =
-try
-    parse(Float64, x)
-    return true
-catch
-    return false
-end
-
-function loadAR(filepath::String; col, delim=',')
-    df = CSV.File(filepath, delim=delim) |> DataFrame
-    x = []
-    df = DataFrame(value=df[!, col])
-    # Data
-    for i in range(1, stop=size(df, 1))
-        if typeof(df[i, 1]) == String && FloatParse(df[i, 1])
-            xi = parse(Float64, df[i, 1])
-            push!(x, xi)
-        elseif typeof(df[i, 1]) == Float64
-            xi = convert(Float64, df[i, 1])
-            push!(x, xi)
-        end
-    end
-    return x
-end
+export generateAR, generateHAR, generateSIN, writeAR, readAR, generateHGFAR
 
 function generate_coefficients(order::Int)
     stable = false
@@ -138,22 +110,6 @@ function generateSIN(num::Int, noise_variance=1/5)
         data[i][1] += sqrt(noise_variance)*randn()
     end
     data = data[1+10*order:end]
-    return coefs, data
-end
-
-function writeAR(coefs, data; folder=".")
-    data = push!(data, coefs)
-    df = DataFrame(hcat(data...)')
-    order = length(data[1])
-    CSV.write(folder*"/AR($order).csv", df)
-end
-
-function readAR(filename)
-    df = CSV.File(filename) |> DataFrame
-    matrix = convert(Matrix, df)
-    matrix = [matrix[i, :] for i in 1:size(matrix, 1)]
-    coefs = matrix[end]
-    data = matrix[1:end-1]
     return coefs, data
 end
 
