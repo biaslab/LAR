@@ -107,10 +107,9 @@ function averageEnergy(::Type{Autoregressive},
 
     # correction
     AE += differentialEntropy(marg_y_x)
-    for i in 2:order
-        myx = myx[1:end .!= i]
-        Vyx = Vyx[1:end .!= i, 1:end .!= i]
-    end
-    marg_y_x = ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=myx, v=Vyx)
+    idc = [1, order+1:2*order...]
+    myx_n = myx[idc]
+    Vyx_n = Vyx[idc, idc]
+    marg_y_x = ProbabilityDistribution(Multivariate, GaussianMeanVariance, m=myx_n, v=Vyx_n)
     AE -= differentialEntropy(marg_y_x)
 end
