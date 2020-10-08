@@ -156,6 +156,8 @@ function ruleSVariationalARIn2PPNP(marg_xy :: ProbabilityDistribution{Multivaria
     c, S = defineCS(div(length(marg_xy.params[:m]), 2))
     order = length(c)
 
+    marg_xy = convert(ProbabilityDistribution{Multivariate, GaussianMeanVariance}, marg_xy)
+
     my, Vy = marg_xy.params[:m][1:order], marg_xy.params[:v][1:order,1:order]
     mx, Vx = marg_xy.params[:m][order+1:end], marg_xy.params[:v][order+1:end, order+1:end]
     Vxy = marg_xy.params[:v][order+1:end,1:order]
