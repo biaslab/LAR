@@ -15,7 +15,7 @@
                       :name          => VariationalARIn2PPNP)
 
 @naiveVariationalRule(:node_type     => Autoregressive,
-                      :outbound_type => Message{Gamma},
+                      :outbound_type => Message{Union{Gamma, Wishart}},
                       :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, ProbabilityDistribution, Nothing),
                       :name          => VariationalARIn3PPPN)
 
@@ -37,7 +37,7 @@
                            :name          => SVariationalARIn2PPNP)
 
 @structuredVariationalRule(:node_type     => Autoregressive,
-                           :outbound_type => Message{Gamma},
+                           :outbound_type => Message{Union{Gamma, Wishart}},
                            :inbound_types => (ProbabilityDistribution, ProbabilityDistribution, Nothing),
                            :name          => SVariationalARIn3PPPN)
 

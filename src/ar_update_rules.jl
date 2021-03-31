@@ -105,7 +105,7 @@ function ruleVariationalARIn3PPPN(marg_y :: ProbabilityDistribution{V},
     my, Vy = unsafeMeanCov(marg_y)
     mx, Vx = unsafeMeanCov(marg_x)
     B = Vy[1, 1] + my[1]*my[1] - 2*my[1]*mθ'*mx + mx'*Vθ*mx + mθ'*(Vx+mx*mx')*mθ
-    Message(Gamma, a=3/2, b=B/2)
+    Message(Univariate, Gamma, a=3/2, b=B/2)
 end
 
 
@@ -189,7 +189,7 @@ function ruleSVariationalARIn3PPPN(marg_xy :: ProbabilityDistribution{V1},
     Vxy = marg_xy.params[:v][order+1:end,1:order]
 
     B = (Vy + my*my')[1, 1] - 2*(mθ*(Vxy + mx*my'))[1, 1] + (mθ*(Vx + mx*mx')*mθ')[1, 1] + tr(Vθ*(Vx + mx*mx'))
-    Message(Gamma, a=3/2, b=B/2)
+    Message(Univariate, Gamma, a=3/2, b=B/2)
 end
 
 function ruleMGaussianMeanVarianceGGGD(msg_y::Message{F1, V},
